@@ -159,19 +159,16 @@ async def broadcast_command(update, context):
 
     for uid in active_users:
         try:
-            await context.bot.send_message(chat_id=uid, text=f"📢 Рассылка от админа:
-
-{message}")
+            text = "📢 Рассылка от админа:" + chr(10) + chr(10) + message
+            await context.bot.send_message(chat_id=uid, text=text)
             sent_count += 1
         except Exception:
             failed_count += 1
 
     await update.message.reply_text(
-        f"✅ Рассылка отправлена!
-"
-        f"📬 Успешно: {sent_count}
-"
-        f"❌ Не доставлено: {failed_count}"
+        "✅ Рассылка отправлена!" + chr(10) +
+        "📬 Успешно: " + str(sent_count) + chr(10) +
+        "❌ Не доставлено: " + str(failed_count)
     )
 
 # === ОБРАБОТЧИК СТАВОК ===
