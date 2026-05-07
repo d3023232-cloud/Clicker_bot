@@ -3,19 +3,19 @@ import os
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 if not BOT_TOKEN:
-    raise ValueError("❌ Переменная окружения BOT_TOKEN не установлена! Добавьте её в панели хостинга.")
+    raise ValueError("BOT_TOKEN not set! Add it in hosting environment variables.")
 
 ADMIN_ID_STR = os.getenv("ADMIN_ID", "0")
-ADMIN_ID = int(ADMIN_ID_STR) if ADMIN_ID_STR else 0
+ADMIN_ID = int(ADMIN_ID_STR.split(",")[0].strip()) if ADMIN_ID_STR else 0
 
 ADMIN_IDS_STR = os.getenv("ADMIN_IDS", "")
 ADMIN_IDS = [int(x.strip()) for x in ADMIN_IDS_STR.split(",") if x.strip()]
 if ADMIN_ID and ADMIN_ID not in ADMIN_IDS:
     ADMIN_IDS.insert(0, ADMIN_ID)
 
-YOUR_BOT_USERNAME = os.getenv("YOUR_BOT_USERNAME", "your_clicker_bot")
-if YOUR_BOT_USERNAME == "your_clicker_bot":
-    print("⚠️ Внимание: YOUR_BOT_USERNAME не установлен. Реферальные ссылки могут не работать.")
+YOUR_BOT_USERNAME = os.getenv("YOUR_BOT_USERNAME", "")
+if not YOUR_BOT_USERNAME:
+    print("Warning: YOUR_BOT_USERNAME not set. Referral links may not work.")
 
 DATA_FILE = os.getenv("DATA_FILE", "clicker_data.json")
 
@@ -24,101 +24,56 @@ REMINDER_INTERVAL_MAX = 10800
 DAILY_BONUS_BASE = 20
 DAILY_BONUS_PREMIUM = 50
 MIN_BET = 20
-MAX_BET = 1_000_000
+MAX_BET = 1000000
 MIN_DUEL_BET = 100
 
 LEAGUES = [
-    (0, "🥉 Бронзовая"),
-    (1_000_000, "🥈 Серебряная"),
-    (10_000_000, "🥇 Золотая"),
-    (100_000_000, "💎 Алмазная"),
-    (500_000_000, "💚 Изумрудная"),
-    (1_000_000_000, "❤️ Рубиновая"),
-    (50_000_000_000, "⚡️ Божественная"),
-    (100_000_000_000, "🌌 Галактическая"),
-    (500_000_000_000, "🏆 Легендарная")
+    (0, "Bronze"),
+    (1000000, "Silver"),
+    (10000000, "Gold"),
+    (100000000, "Diamond"),
+    (500000000, "Emerald"),
+    (1000000000, "Ruby"),
+    (50000000000, "Divine"),
+    (100000000000, "Galactic"),
+    (500000000000, "Legendary")
 ]
 
 ACHIEVEMENTS = {
-    "first_click": {"name": "Первый клик!", "desc": "Сделать первый клик"},
-    "click_100": {"name": "Клик-машина", "desc": "100 кликов"},
-    "rich_100": {"name": "Первые 100 монет!", "desc": "Накопить 100 монет"},
-    "buy_upgrade": {"name": "Инвестор", "desc": "Купить первое улучшение"},
-    "auto_owner": {"name": "Робо-помощник", "desc": "Приобрести автокликер"}
+    "first_click": {"name": "First Click!", "desc": "Make your first click"},
+    "click_100": {"name": "Click Machine", "desc": "100 clicks"},
+    "rich_100": {"name": "First 100 Coins!", "desc": "Earn 100 coins"},
+    "buy_upgrade": {"name": "Investor", "desc": "Buy first upgrade"},
+    "auto_owner": {"name": "Robot Helper", "desc": "Buy auto-clicker"}
 }
 
 UPGRADES = {
-    "double_click": {
-        "name": "Удвоитель клика",
-        "cost": 10,
-        "effect": 2.0,
-        "type": "click_power"
-    },
-    "auto_clicker": {
-        "name": "Автокликер",
-        "cost": 30,
-        "effect": 5.0,
-        "type": "auto_clicker"
-    }
+    "double_click": {"name": "Click Doubler", "cost": 10, "effect": 2.0, "type": "click_power"},
+    "auto_clicker": {"name": "Auto-Clicker", "cost": 30, "effect": 5.0, "type": "auto_clicker"}
 }
 
 TITLES = {
-    "novice": {"name": "Новичок", "cost": 0, "desc": "Только начал путь кликера"},
-    "clicker": {"name": "Кликер", "cost": 100, "desc": "Уже не новичок!"},
-    "millionaire": {"name": "Миллионер", "cost": 1000, "desc": "Богатый кликер!"},
-    "legend": {"name": "Легенда", "cost": 5000, "desc": "Живая легенда мира кликеров!"}
+    "novice": {"name": "Novice", "cost": 0, "desc": "Just started"},
+    "clicker": {"name": "Clicker", "cost": 100, "desc": "Not a newbie anymore!"},
+    "millionaire": {"name": "Millionaire", "cost": 1000, "desc": "Rich clicker!"},
+    "legend": {"name": "Legend", "cost": 5000, "desc": "Living legend!"}
 }
 
 DONAT_SHOP = {
-    "premium": {
-        "name": "💎 Premium-статус",
-        "cost": 50,
-        "stars": 100,
-        "desc": "×2 к автоклику, ×1.5 к клику, +50 монет ежедневно"
-    },
-    "bonus_100": {
-        "name": "💰 +100 монет",
-        "cost": 5,
-        "stars": 10,
-        "desc": "Мгновенно +100 монет"
-    },
-    "click_power_5": {
-        "name": "⚡ +5 к силе клика",
-        "cost": 20,
-        "stars": 40,
-        "desc": "Навсегда +5 к силе клика"
-    }
+    "premium": {"name": "Premium Status", "cost": 50, "stars": 100, "desc": "x2 auto, x1.5 click, +50 daily"},
+    "bonus_100": {"name": "+100 Coins", "cost": 5, "stars": 10, "desc": "Instant +100 coins"},
+    "click_power_5": {"name": "+5 Click Power", "cost": 20, "stars": 40, "desc": "Permanent +5 click power"}
 }
 
 REMINDER_MESSAGES = [
-    "Пойдем играть! У тебя наверняка накапала приличная сумма в автокликире 😏/start",
-    "Ты пропустил кучу монет! Загляни в бота 🪙/start",
-    "Твой автокликер плачет без тебя 💧/start",
-    "Срочно! Твой баланс растёт, а ты не смотришь! 👀/start",
-    "Нажми 'Клик!' — и получи бонус! 🎁/start",
-    "Ты в шаге от новой лиги! Проверь свой прогресс 🏆/start",
-    "Твой автокликер заработал для тебя — забери! 🤖/start",
-    "Не спи! Монеты ждут тебя! 💰/start",
-    "Ты не поверишь, сколько у тебя монет... 👀/start",
-    "Загляни в магазин — там новое улучшение! 🔧/start",
-    "Твой профиль скучает без тебя! 👤/start",
-    "Пора обновить звание! У тебя почти хватает 🪙/start",
-    "Кто-то только что обогнал тебя в топе! Беги! 🏃‍♂️/start",
-    "Ты пропустил ежедневный бонус! Забери его 🎁/start",
-    "Твой автокликер работает на износ — забери прибыль! ⚙️/start",
-    "Сыграй в краш — сегодня твой день удачи! 🍀/start",
-    "Ты не играл уже час! Твой баланс замерз ❄️/start",
-    "Нажми 'Клик!' — и получи +10% к силе клика на 5 минут! ⚡/start",
-    "Ты в 1 клике от нового достижения! 🏅/start",
-    "Твой баланс перевалил за миллион! Поздравляю! 🎉/start",
-    "Загляни в мини-игры — там джекпот! 🎰/start",
-    "Ты не использовал автокликер целый день! Активируй его! 🤖/start",
-    "Твой профиль выглядит грустно без тебя 😢/start",
-    "Проверь, сколько монет ты заработал за это время! 📈/start",
-    "Ты пропустил шанс выиграть в рулетке! 🔴⚫/start",
-    "Твой автокликер устал — дай ему отдохнуть (и забери монеты) 😴/start",
-    "Срочно! Ограниченное улучшение в магазине! ⏳/start",
-    "Ты почти достиг легендарной лиги! 💎/start",
-    "Твой баланс растёт, а ты читаешь это сообщение? 😏/start",
-    "Не забудь про ежедневный бонус — он ждёт тебя! 🎁/start"
+    "Come play! Your auto-clicker earned coins! /start",
+    "You missed a lot of coins! Check the bot! /start",
+    "Your auto-clicker is crying without you! /start",
+    "Urgent! Your balance is growing! /start",
+    "Click and get a bonus! /start",
+    "You are close to a new league! /start",
+    "Your auto-clicker worked for you! /start",
+    "Don't sleep! Coins are waiting! /start",
+    "You won't believe how many coins you have! /start",
+    "Check the shop for new upgrades! /start"
 ]

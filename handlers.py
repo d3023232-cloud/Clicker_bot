@@ -56,17 +56,8 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     greeting = get_time_greeting()
     ref_link = f"https://t.me/{config.YOUR_BOT_USERNAME}?start=ref{user_id}"
 
-    await update.message.reply_text(
-        f"{greeting}
-"
-        f"🎮 Добро пожаловать в Clicker Bot!
-
-"
-        f"🔗 Ваша реферальная ссылка:
-<code>{ref_link}</code>",
-        parse_mode="HTML",
-        reply_markup=get_main_menu()
-    )
+    lines = [greeting, "🎮 Добро пожаловать в Clicker Bot!", "", "🔗 Ваша реферальная ссылка:", ref_link]
+    await update.message.reply_text(chr(10).join(lines), parse_mode="HTML", reply_markup=get_main_menu())
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик нажатий на кнопки"""
@@ -91,23 +82,16 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ach_msg = ""
         if result["new_achievements"]:
             ach_names = [config.ACHIEVEMENTS[aid]["name"] for aid in result["new_achievements"]]
-            ach_msg = "
+            ach_msg = chr(10) + chr(10) + "🎉 Новое достижение: " + ", ".join(ach_names) + "!"
 
-🎉 Новое достижение: " + ", ".join(ach_names) + "!"
-
-        text = (
-            f"🖱 Вы кликнули!
-"
-            f"💰 +{format_number(int(result['coins_earned']))} монет от клика
-"
-            f"🤖 +{format_number(int(result['auto_income']))} монет от автокликера
-"
-            f"🪙 Всего монет: {format_number(int(result['total_coins']))}
-"
-            f"⚡ Сила клика: {result['click_power']}"
-            + ach_msg
-        )
-        await query.edit_message_text(text=text, reply_markup=get_main_menu())
+        lines = [
+            "🖱 Вы кликнули!",
+            "💰 +" + format_number(int(result['coins_earned'])) + " монет от клика",
+            "🤖 +" + format_number(int(result['auto_income'])) + " монет от автокликера",
+            "🪙 Всего монет: " + format_number(int(result['total_coins'])),
+            "⚡ Сила клика: " + str(result['click_power'])
+        ]
+        await query.edit_message_text(text=chr(10).join(lines) + ach_msg, reply_markup=get_main_menu())
 
     elif query.data == 'top':
         await query.edit_message_text(text=get_top_text(), reply_markup=get_main_menu())
@@ -132,26 +116,22 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         result = process_daily_bonus(user_id)
         if result["success"]:
             await query.edit_message_text(
-                f"🎁 Получено {format_number(result['bonus'])} монет!
-Возвращайтесь завтра!",
+                "🎁 Получено " + format_number(result['bonus']) + " монет!" + chr(10) + "Возвращайтесь завтра!",
                 reply_markup=get_main_menu()
             )
         else:
             await query.edit_message_text(
-                f"🎁 Бонус можно получить через {result['hours_left']} ч.",
+                "🎁 Бонус можно получить через " + str(result['hours_left']) + " ч.",
                 reply_markup=get_main_menu()
             )
 
     elif query.data == 'achievements':
         ud = data_manager.user_data[user_id]
-        msg = "🏅 Ваши достижения:
-"
+        msg = "🏅 Ваши достижения:" + chr(10)
         for key, ach in config.ACHIEVEMENTS.items():
             status = "✅" if key in ud["achievements"] else "❌"
-            msg += f"{status} {ach['name']} — {ach['desc']}
-"
-        msg += f"
-👑 Ваше звание: {ud['title']}"
+            msg += status + " " + ach['name'] + " — " + ach['desc'] + chr(10)
+        msg += chr(10) + "👑 Ваше звание: " + ud['title']
         await query.edit_message_text(msg, reply_markup=get_main_menu())
 
     elif query.data == 'my_profile':
@@ -162,27 +142,22 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ref_link = f"https://t.me/{config.YOUR_BOT_USERNAME}?start=ref{user_id}"
         ud = data_manager.user_data[user_id]
         ref_count = len([u for u in data_manager.user_data.values() if u.get("referrer_id") == user_id])
-        msg = (
-            f"🤝 <b>Реферальная система</b>
-
-"
-            f"🔗 Ваша ссылка:
-<code>{ref_link}</code>
-
-"
-            f"👥 Приглашено: <b>{ref_count}</b> друзей
-"
-            f"💎 За каждого: <b>2 Donat-коина</b>
-"
-            f"💰 Всего получено: <b>{ud['donate_coins']}</b> Donat-коинов"
-        )
-        await query.edit_message_text(msg, parse_mode="HTML", reply_markup=get_main_menu())
+        lines = [
+            "🤝 <b>Реферальная система</b>",
+            "",
+            "🔗 Ваша ссылка:",
+            ref_link,
+            "",
+            "👥 Приглашено: <b>" + str(ref_count) + "</b> друзей",
+            "💎 За каждого: <b>2 Donat-коина</b>",
+            "💰 Всего получено: <b>" + str(ud['donate_coins']) + "</b> Donat-коинов"
+        ]
+        await query.edit_message_text(chr(10).join(lines), parse_mode="HTML", reply_markup=get_main_menu())
 
     elif query.data == 'donat_shop':
         keyboard = get_donat_shop_keyboard()
         await query.edit_message_text(
-            "💎 <b>Donat-магазин (оплата звёздами)</b>
-Покупайте за ⭐:",
+            "💎 <b>Donat-магазин (оплата звёздами)</b>" + chr(10) + "Покупайте за ⭐:",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
@@ -209,7 +184,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 start_parameter="buy"
             )
         except Exception as e:
-            print(f"❌ Ошибка при отправке инвойса: {e}")
+            print("❌ Ошибка при отправке инвойса: " + str(e))
             await query.edit_message_text("❌ Ошибка при создании инвойса.", reply_markup=get_main_menu())
 
     # === МИНИ-ИГРЫ ===
@@ -229,15 +204,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.answer(result["message"], show_alert=True)
             return
 
-        msg = (
-            "💥 <b>Краш-игра</b>
-"
-            "Ставка от 20 до 1 000 000 монет.
-
-"
+        lines = [
+            "💥 <b>Краш-игра</b>",
+            "Ставка от 20 до 1 000 000 монет.",
+            "",
             "<i>Введите ставку в чат (например: 100)</i>"
-        )
-        await query.edit_message_text(msg, parse_mode="HTML")
+        ]
+        await query.edit_message_text(chr(10).join(lines), parse_mode="HTML")
         context.user_data["crash_state"] = "bet"
         context.user_data["crash_user_id"] = user_id
 
@@ -263,7 +236,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data.pop("crash_bet", None)
             context.user_data.pop("crash_user_id", None)
         except Exception as e:
-            await query.edit_message_text(f"❌ Ошибка: {e}", reply_markup=get_main_menu())
+            await query.edit_message_text("❌ Ошибка: " + str(e), reply_markup=get_main_menu())
 
     # === РУЛЕТКА ===
     elif query.data == 'game_roulette_start':
@@ -272,23 +245,17 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.answer(result["message"], show_alert=True)
             return
 
-        msg = (
-            "🎰 <b>Рулетка</b>
-"
-            "Ставка от 20 до 1 000 000 монет.
-"
-            "Выберите цвет:
-"
-            "• 🔴 Красное (×1.9)
-"
-            "• ⚫ Чёрное (×1.9)
-"
-            "• 🟢 Зелёное (×9.0, шанс 10%)
-
-"
+        lines = [
+            "🎰 <b>Рулетка</b>",
+            "Ставка от 20 до 1 000 000 монет.",
+            "Выберите цвет:",
+            "• 🔴 Красное (×1.9)",
+            "• ⚫ Чёрное (×1.9)",
+            "• 🟢 Зелёное (×9.0, шанс 10%)",
+            "",
             "<i>Введите ставку в чат</i>"
-        )
-        await query.edit_message_text(msg, parse_mode="HTML")
+        ]
+        await query.edit_message_text(chr(10).join(lines), parse_mode="HTML")
         context.user_data["roulette_state"] = "bet"
         context.user_data["roulette_user_id"] = user_id
 
@@ -307,14 +274,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text(result["message"], reply_markup=get_main_menu())
             return
 
-        await query.edit_message_text(
-            f"🎰 <b>Рулетка</b>
-{result['message']}
-
-🪙 Баланс: {format_number(int(result['balance']))}",
-            parse_mode="HTML",
-            reply_markup=get_main_menu()
-        )
+        lines = [
+            "🎰 <b>Рулетка</b>",
+            result['message'],
+            "",
+            "🪙 Баланс: " + format_number(int(result['balance']))
+        ]
+        await query.edit_message_text(chr(10).join(lines), parse_mode="HTML", reply_markup=get_main_menu())
 
         context.user_data.pop("roulette_state", None)
         context.user_data.pop("roulette_bet", None)
@@ -327,17 +293,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.answer(result["message"], show_alert=True)
             return
 
-        msg = (
-            "⚔️ <b>Дуэль с ботом</b>
-"
-            "Ставка от 100 до 1 000 000 монет.
-"
-            "Шанс победы: 48% (бот берёт 4% комиссии).
-
-"
+        lines = [
+            "⚔️ <b>Дуэль с ботом</b>",
+            "Ставка от 100 до 1 000 000 монет.",
+            "Шанс победы: 48% (бот берёт 4% комиссии).",
+            "",
             "<i>Введите ставку в чат</i>"
-        )
-        await query.edit_message_text(msg, parse_mode="HTML")
+        ]
+        await query.edit_message_text(chr(10).join(lines), parse_mode="HTML")
         context.user_data["duel_state"] = "bet"
         context.user_data["duel_user_id"] = user_id
 
