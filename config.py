@@ -1,7 +1,6 @@
 """Конфигурация бота из переменных окружения хостинга"""
 import os
 
-# === TELEGRAM ===
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 if not BOT_TOKEN:
     raise ValueError("❌ Переменная окружения BOT_TOKEN не установлена! Добавьте её в панели хостинга.")
@@ -18,19 +17,16 @@ YOUR_BOT_USERNAME = os.getenv("YOUR_BOT_USERNAME", "your_clicker_bot")
 if YOUR_BOT_USERNAME == "your_clicker_bot":
     print("⚠️ Внимание: YOUR_BOT_USERNAME не установлен. Реферальные ссылки могут не работать.")
 
-# === DATA ===
 DATA_FILE = os.getenv("DATA_FILE", "clicker_data.json")
 
-# === CONSTANTS ===
-REMINDER_INTERVAL_MIN = 3600   # 1 час
-REMINDER_INTERVAL_MAX = 10800  # 3 часа
+REMINDER_INTERVAL_MIN = 3600
+REMINDER_INTERVAL_MAX = 10800
 DAILY_BONUS_BASE = 20
 DAILY_BONUS_PREMIUM = 50
 MIN_BET = 20
 MAX_BET = 1_000_000
 MIN_DUEL_BET = 100
 
-# === LEAGUES ===
 LEAGUES = [
     (0, "🥉 Бронзовая"),
     (1_000_000, "🥈 Серебряная"),
@@ -43,7 +39,6 @@ LEAGUES = [
     (500_000_000_000, "🏆 Легендарная")
 ]
 
-# === ACHIEVEMENTS ===
 ACHIEVEMENTS = {
     "first_click": {"name": "Первый клик!", "desc": "Сделать первый клик"},
     "click_100": {"name": "Клик-машина", "desc": "100 кликов"},
@@ -52,7 +47,6 @@ ACHIEVEMENTS = {
     "auto_owner": {"name": "Робо-помощник", "desc": "Приобрести автокликер"}
 }
 
-# === UPGRADES ===
 UPGRADES = {
     "double_click": {
         "name": "Удвоитель клика",
@@ -68,7 +62,6 @@ UPGRADES = {
     }
 }
 
-# === TITLES ===
 TITLES = {
     "novice": {"name": "Новичок", "cost": 0, "desc": "Только начал путь кликера"},
     "clicker": {"name": "Кликер", "cost": 100, "desc": "Уже не новичок!"},
@@ -76,7 +69,6 @@ TITLES = {
     "legend": {"name": "Легенда", "cost": 5000, "desc": "Живая легенда мира кликеров!"}
 }
 
-# === DONAT SHOP ===
 DONAT_SHOP = {
     "premium": {
         "name": "💎 Premium-статус",
@@ -98,7 +90,6 @@ DONAT_SHOP = {
     }
 }
 
-# === REMINDER MESSAGES ===
 REMINDER_MESSAGES = [
     "Пойдем играть! У тебя наверняка накапала приличная сумма в автокликире 😏/start",
     "Ты пропустил кучу монет! Загляни в бота 🪙/start",
