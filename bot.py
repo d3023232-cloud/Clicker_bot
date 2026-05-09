@@ -211,7 +211,9 @@ def main():
     application.add_handler(CommandHandler("start", start_handler))
     application.add_handler(CommandHandler("mm", mm_handler))
     application.add_handler(CommandHandler("admins", admins_panel_handler))
-    
+
+    application.add_handler(CallbackQueryHandler(button_handler))
+
     # 📊 Экономика: команда /econ
     application.add_handler(CommandHandler("econ", econ_command_handler))
 
