@@ -46,7 +46,7 @@ def load_data():
             data = json.load(f)
         loaded = data.get("user_data", {})
         loaded_names = data.get("user_names", {})
-        
+
         # Восстанавливаем defaultdict-поведение
         new_user_data = defaultdict(lambda: {
             "clicks": 0, "coins": 0, "click_power": 1.0, "auto_clicker": 0.0,
@@ -55,7 +55,7 @@ def load_data():
             "premium_until": 0, "donate_coins": 0, "referrer_id": None,
             "last_reminder": 0, "reminders_enabled": True
         })
-        
+
         for uid_str, ud in loaded.items():
             uid = int(uid_str)
             new_user_data[uid] = {
@@ -68,7 +68,7 @@ def load_data():
                 "referrer_id": ud.get("referrer_id"), "last_reminder": ud.get("last_reminder", 0),
                 "reminders_enabled": ud.get("reminders_enabled", True)
             }
-        
+
         user_data = new_user_data
         user_names.update(loaded_names)
         print(f"Loaded {len(user_data)} players.")

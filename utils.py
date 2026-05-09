@@ -32,13 +32,17 @@ def load_economy():
         print(f"⚠️ Ошибка загрузки экономики: {e}")
     return _economy_cache
 
-def get_econ(key: str):
+def get_econ(key: str, default=None):
     """📊 Безопасно достаёт значение по пути (например: 'income.click_base')"""
     econ = load_economy()
     keys = key.split(".")
     val = econ
     for k in keys:
-        val = val[k]
+        if isinstance(val, dict) and k in val:
+            val = val[k]
+        else:
+            print(f"⚠️ Ключ экономики '{key}' не найден, используется дефолт: {default}")
+            return default
     return val
 
 def save_economy(data=None):
