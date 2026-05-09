@@ -1,0 +1,36 @@
+{
+  "income": {
+    "click_base": 1.0,
+    "daily_base": 20,
+    "auto_cap_pct": 0.4,
+    "inactive_decay_mult": 0.3
+  },
+  "pricing": {
+    "cost_multiplier": 2.8,
+    "diminishing_effect": true
+  },
+  "tax_rates": {
+    "🥉 Бронза": 0.0,
+    "🥈 Серебро": 0.005,
+    "🥇 Золото": 0.01,
+    "💎 Алмаз": 0.015,
+    "💚 Изумруд": 0.02,
+    "❤️ Рубин": 0.025,
+    "🔮 Божественный": 0.03,
+    "🌌 Галактический": 0.04,
+    "👑 Легендарный": 0.05
+  },
+  "games": {
+    "max_bet_pct": 0.1,
+    "house_edge": 0.02,
+    "min_bet": 20
+  },
+  "limits": {
+    "click_base": [0.1, 5.0],
+    "daily_base": [5, 100],
+    "cost_multiplier": [1.5, 5.0],
+    "max_bet_pct": [0.01, 0.5],
+    "house_edge": [0.0, 0.1],
+    "min_bet": [10, 1000]
+  }
+}
