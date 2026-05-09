@@ -1,25 +1,32 @@
-"""Mini-games: Crash, Roulette, Duel"""
 import random
 import config
 import data_manager
 from game_logic import update_league
-from utils import format_number, generate_crash_multiplier
+from utils import format_number, generate_crash_multiplier, get_econ
 
-def validate_bet(user_id, bet_text, min_bet, max_bet):
+def validate_bet(user_id, bet_text):
+    """📊 Валидация ставки (влияет: games.min_bet, games.max_bet_pct)"""
     try:
         bet = int(bet_text)
+        min_bet = int(get_econ("games.min_bet"))
+        max_pct = get_econ("games.max_bet_pct")
+        ud = data_manager.user_data[user_id]
+        max_allowed = int(ud["coins"] * max_pct)
+
         if bet < min_bet:
             return {"success": False, "message": f"❌ Минимальная ставка: {min_bet} монет"}
-        if bet > max_bet:
-            return {"success": False, "message": f"❌ Максимальная ставка: {max_bet} монет"}
-        if data_manager.user_data[user_id]["coins"] < bet:
+        if bet > max_allowed:
+            return {"success": False, "message": f"⚠️ Макс. ставка: {format_number(max_allowed)} монет ({int(max_pct*100)}% от баланса)"}
+        if bet > config.MAX_BET:
+            return {"success": False, "message": f"❌ Максимальная ставка: {format_number(config.MAX_BET)}"}
+        if ud["coins"] < bet:
             return {"success": False, "message": "❌ Недостаточно монет!"}
         return {"success": True, "bet": bet}
     except ValueError:
         return {"success": False, "message": "❌ Введите число (например: 100)"}
 
 def start_crash_game(user_id):
-    if data_manager.user_data[user_id]["coins"] < config.MIN_BET:
+    if data_manager.user_data[user_id]["coins"] < int(get_econ("games.min_bet")):
         return {"success": False, "message": "❌ Нужно минимум 20 монет!"}
     return {"success": True}
 
@@ -45,7 +52,7 @@ def process_crash_game(user_id, bet, multiplier):
         return {"success": True, "win": False, "message": msg, "bot_multiplier": bot_multiplier}
 
 def start_roulette_game(user_id):
-    if data_manager.user_data[user_id]["coins"] < config.MIN_BET:
+    if data_manager.user_data[user_id]["coins"] < int(get_econ("games.min_bet")):
         return {"success": False, "message": "❌ Нужно минимум 20 монет!"}
     return {"success": True}
 
@@ -79,7 +86,7 @@ def process_roulette_game(user_id, bet, color):
     return {"success": True, "win": color == result, "message": message, "result": result, "balance": ud["coins"]}
 
 def start_duel_game(user_id):
-    if data_manager.user_data[user_id]["coins"] < config.MIN_DUEL_BET:
+    if data_manager.user_data[user_id]["coins"] < 100:
         return {"success": False, "message": "❌ Нужно минимум 100 монет!"}
     return {"success": True}
 
