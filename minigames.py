@@ -9,48 +9,51 @@ def validate_bet(user_id, bet_text, min_bet, max_bet):
     try:
         bet = int(bet_text)
         if bet < min_bet:
-            return {"success": False, "message": f"Min bet: {min_bet} coins"}
+            return {"success": False, "message": f"❌ Минимальная ставка: {min_bet} монет"}
         if bet > max_bet:
-            return {"success": False, "message": f"Max bet: {max_bet} coins"}
+            return {"success": False, "message": f"❌ Максимальная ставка: {max_bet} монет"}
         if data_manager.user_data[user_id]["coins"] < bet:
-            return {"success": False, "message": "Not enough coins!"}
+            return {"success": False, "message": "❌ Недостаточно монет!"}
         return {"success": True, "bet": bet}
     except ValueError:
-        return {"success": False, "message": "Enter a number (e.g. 100)"}
+        return {"success": False, "message": "❌ Введите число (например: 100)"}
 
 def start_crash_game(user_id):
     if data_manager.user_data[user_id]["coins"] < config.MIN_BET:
-        return {"success": False, "message": "Need at least 20 coins!"}
+        return {"success": False, "message": "❌ Нужно минимум 20 монет!"}
     return {"success": True}
 
 def process_crash_game(user_id, bet, multiplier):
     ud = data_manager.user_data[user_id]
     if ud["coins"] < bet:
-        return {"success": False, "message": "Not enough coins!"}
+        return {"success": False, "message": "❌ Недостаточно монет!"}
+        
     bot_multiplier = generate_crash_multiplier()
+    
     if bot_multiplier >= multiplier:
         win = int(bet * multiplier)
         ud["coins"] += win
         update_league(user_id)
         data_manager.save_data()
-        msg = f"SUCCESS! Your: {multiplier}x | Crash: {bot_multiplier}x | Won: +{format_number(win)} coins!"
+        msg = f"✅ УСПЕХ! Ваш коэффициент: {multiplier}x | Краш: {bot_multiplier}x | Выигрыш: +{format_number(win)} монет! 💰"
         return {"success": True, "win": True, "message": msg, "bot_multiplier": bot_multiplier}
     else:
         ud["coins"] -= bet
         update_league(user_id)
         data_manager.save_data()
-        msg = f"CRASH! Your: {multiplier}x | Crash: {bot_multiplier}x | Lost: {format_number(bet)} coins"
+        msg = f"💥 КРАШ! Ваш коэффициент: {multiplier}x | Краш: {bot_multiplier}x | Потеряно: {format_number(bet)} монет 😢"
         return {"success": True, "win": False, "message": msg, "bot_multiplier": bot_multiplier}
 
 def start_roulette_game(user_id):
     if data_manager.user_data[user_id]["coins"] < config.MIN_BET:
-        return {"success": False, "message": "Need at least 20 coins!"}
+        return {"success": False, "message": "❌ Нужно минимум 20 монет!"}
     return {"success": True}
 
 def process_roulette_game(user_id, bet, color):
     ud = data_manager.user_data[user_id]
     if ud["coins"] < bet:
-        return {"success": False, "message": "Not enough coins!"}
+        return {"success": False, "message": "❌ Недостаточно монет!"}
+        
     rand = random.random()
     if rand < 0.45:
         result = "red"
@@ -58,6 +61,7 @@ def process_roulette_game(user_id, bet, color):
         result = "black"
     else:
         result = "green"
+        
     win = 0
     if color == result:
         if color == "green":
@@ -65,30 +69,33 @@ def process_roulette_game(user_id, bet, color):
         else:
             win = int(bet * 1.9)
         ud["coins"] += win
-        message = f"Landed {result}! Won +{format_number(win)} coins!"
+        message = f"🎉 Выпало {result}! Выигрыш: +{format_number(win)} монет! 💰"
     else:
         ud["coins"] -= bet
-        message = f"Landed {result}. Lost {format_number(bet)} coins"
+        message = f"😔 Выпало {result}. Потеряно: {format_number(bet)} монет"
+        
     update_league(user_id)
     data_manager.save_data()
     return {"success": True, "win": color == result, "message": message, "result": result, "balance": ud["coins"]}
 
 def start_duel_game(user_id):
     if data_manager.user_data[user_id]["coins"] < config.MIN_DUEL_BET:
-        return {"success": False, "message": "Need at least 100 coins!"}
+        return {"success": False, "message": "❌ Нужно минимум 100 монет!"}
     return {"success": True}
 
 def process_duel_game(user_id, bet):
     ud = data_manager.user_data[user_id]
     if ud["coins"] < bet:
-        return {"success": False, "message": "Not enough coins!"}
+        return {"success": False, "message": "❌ Недостаточно монет!"}
+        
     if random.random() < 0.48:
         win = int(bet * 0.96)
         ud["coins"] += win
-        message = f"You won! Got +{format_number(win)} coins (after fee)"
+        message = f"⚔️ Победа! Получено: +{format_number(win)} монет (с учетом комиссии)"
     else:
         ud["coins"] -= bet
-        message = f"You lost {format_number(bet)} coins"
+        message = f"⚔️ Поражение. Потеряно: {format_number(bet)} монет"
+        
     update_league(user_id)
     data_manager.save_data()
     return {"success": True, "message": message, "balance": ud["coins"]}
