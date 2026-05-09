@@ -45,9 +45,20 @@ def load_data():
         with open(config.DATA_FILE, 'r', encoding='utf-8') as f:
             data = json.load(f)
         loaded = data.get("user_data", {})
+        loaded_names = data.get("user_names", {})
+        
+        # Восстанавливаем defaultdict-поведение
+        new_user_data = defaultdict(lambda: {
+            "clicks": 0, "coins": 0, "click_power": 1.0, "auto_clicker": 0.0,
+            "last_click": time.time(), "last_daily": 0, "achievements": set(),
+            "title": "Novice", "league": "Bronze", "premium": False,
+            "premium_until": 0, "donate_coins": 0, "referrer_id": None,
+            "last_reminder": 0, "reminders_enabled": True
+        })
+        
         for uid_str, ud in loaded.items():
             uid = int(uid_str)
-            user_data[uid] = {
+            new_user_data[uid] = {
                 "clicks": ud.get("clicks", 0), "coins": ud.get("coins", 0),
                 "click_power": ud.get("click_power", 1.0), "auto_clicker": ud.get("auto_clicker", 0.0),
                 "last_click": ud.get("last_click", time.time()), "last_daily": ud.get("last_daily", 0),
@@ -57,7 +68,9 @@ def load_data():
                 "referrer_id": ud.get("referrer_id"), "last_reminder": ud.get("last_reminder", 0),
                 "reminders_enabled": ud.get("reminders_enabled", True)
             }
-        user_names.update(data.get("user_names", {}))
+        
+        user_data = new_user_data
+        user_names.update(loaded_names)
         print(f"Loaded {len(user_data)} players.")
     except Exception as e:
         print(f"Load error: {e}")
