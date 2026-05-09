@@ -1,4 +1,3 @@
-"""Магазины (улучшения, звания, донат)"""
 import config
 import data_manager
 from game_logic import update_league
@@ -22,7 +21,7 @@ def buy_upgrade(user_id, upg_key):
         ud["click_power"] += upg["effect"]
         result = {
             "success": True,
-            "message": "✅ Куплено: " + upg['name'] + "!" + chr(10) + "⚡ Сила клика: " + str(old_power) + " → " + str(ud['click_power'])
+            "message": "✅ Куплено: " + upg['name'] + "!" + "\n" + "⚡ Сила клика: " + str(old_power) + " → " + str(ud['click_power'])
         }
     elif upg["type"] == "auto_clicker":
         old_auto = ud["auto_clicker"]
@@ -31,7 +30,7 @@ def buy_upgrade(user_id, upg_key):
             ud["achievements"].add("auto_owner")
         result = {
             "success": True,
-            "message": "✅ Куплен: " + upg['name'] + "!" + chr(10) + "🤖 Автокликер: " + str(old_auto) + " → " + str(ud['auto_clicker']) + " монет/мин",
+            "message": "✅ Куплен: " + upg['name'] + "!" + "\n" + "🤖 Автокликер: " + str(old_auto) + " → " + str(ud['auto_clicker']) + " монет/мин",
             "new_achievement": "auto_owner" if "auto_owner" not in ud["achievements"] else None
         }
 
@@ -41,24 +40,6 @@ def buy_upgrade(user_id, upg_key):
     update_league(user_id)
     data_manager.save_data()
     return result
-
-def buy_title(user_id, title_key):
-    """Покупка звания"""
-    if title_key not in config.TITLES:
-        return {"success": False, "message": "❌ Звание не найдено"}
-
-    ud = data_manager.user_data[user_id]
-    title = config.TITLES[title_key]
-
-    if ud["coins"] < title["cost"]:
-        return {"success": False, "message": "❌ Недостаточно монет!"}
-
-    ud["coins"] -= title["cost"]
-    ud["title"] = title["name"]
-    update_league(user_id)
-    data_manager.save_data()
-
-    return {"success": True, "message": "👑 Звание '" + title['name'] + "' установлено!"}
 
 def get_shop_upgrades_keyboard(user_id):
     """Формирует клавиатуру магазина улучшений"""
@@ -87,15 +68,14 @@ def get_shop_titles_keyboard(user_id):
 
     ud = data_manager.user_data[user_id]
     coins = ud["coins"]
-    current_title = ud["title"]
     keyboard = []
 
     for key, title in config.TITLES.items():
         cost_str = format_number(title['cost'])
-        if title["name"] == current_title:
-            btn_text = "✅ " + title['name'] + " — " + title['desc']
+        if title['name'] == ud['title']:
+            btn_text = "✅ " + title['name'] + " (Выбрано)"
             btn = InlineKeyboardButton(btn_text, callback_data='noop')
-        elif coins >= title["cost"]:
+        elif coins >= title['cost']:
             btn_text = "Купить: " + title['name'] + " (" + cost_str + " 🪙)"
             btn = InlineKeyboardButton(btn_text, callback_data='buy_title_' + key)
         else:
@@ -106,14 +86,34 @@ def get_shop_titles_keyboard(user_id):
     keyboard.append([InlineKeyboardButton("⬅️ Назад в магазин", callback_data='shop')])
     return keyboard
 
-def get_donat_shop_keyboard():
-    """Формирует клавиатуру донат-магазина"""
-    from telegram import InlineKeyboardButton
+def buy_title(user_id, title_key):
+    """Покупка звания"""
+    if title_key not in config.TITLES:
+        return {"success": False, "message": "❌ Звание не найдено"}
 
+    ud = data_manager.user_data[user_id]
+    title = config.TITLES[title_key]
+
+    if ud["coins"] < title["cost"]:
+        return {"success": False, "message": "❌ Недостаточно монет!"}
+
+    ud["coins"] -= title["cost"]
+    old_title = ud["title"]
+    ud["title"] = title["name"]
+    
+    update_league(user_id)
+    data_manager.save_data()
+    
+    return {
+        "success": True,
+        "message": f"✅ Звание изменено: {old_title} → {title['name']}"
+    }
+
+def get_donat_shop_keyboard():
+    """Клавиатура донат-магазина"""
+    from telegram import InlineKeyboardButton
     keyboard = []
     for key, item in config.DONAT_SHOP.items():
-        btn_text = item['name'] + " (" + str(item['stars']) + " ⭐)"
-        btn = InlineKeyboardButton(btn_text, callback_data='buy_stars_' + key)
-        keyboard.append([btn])
+        keyboard.append([InlineKeyboardButton(f"{item['name']} - {item['stars']} ⭐", callback_data=f'buy_stars_{key}')])
     keyboard.append([InlineKeyboardButton("⬅️ Назад", callback_data='back')])
     return keyboard
