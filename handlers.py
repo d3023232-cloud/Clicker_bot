@@ -67,14 +67,23 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     greeting = get_time_greeting()
     ref_link = f"https://t.me/{config.YOUR_BOT_USERNAME}?start=ref{user_id}"
 
-    lines = [
-        greeting, 
-        "🎮 Добро пожаловать в Clicker Bot!", 
-        "", 
-        "🔗 Ваша реферальная ссылка:", 
-        ref_link
-    ]
-    await update.message.reply_text("\n".join(lines), parse_mode="HTML", reply_markup=get_main_menu())
+welcome_text = (
+    "╔════════════════════╗\n"
+    "   🎮 CLICKER BOT 🎮\n"
+    "╚════════════════════╝\n"
+    "\n"
+    "👋 Привет, игрок!\n"
+    "\n"
+    "✨ Твой прогресс начинается здесь:\n"
+    "   🖱 Кликай → 💰 Копи → 🔧 Улучшай → 🏆 Побеждай\n"
+    "\n"
+    "🎁 Не забудь забрать ежедневный бонус!\n"
+    "🎰 Испытай удачу в мини-играх!\n"
+    "\n"
+    "➡️ Жми кнопку «🖱 Клик!» и начни путь к славе! 👇"
+)
+
+await update.message.reply_text(welcome_text, reply_markup=get_main_menu())
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик нажатий на кнопки"""
