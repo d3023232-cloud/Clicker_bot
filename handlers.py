@@ -43,7 +43,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # 🤝 2. Реферальная система (если есть ссылка)
+    # 🤝 2. Реферальная система
     if context.args and context.args[0].startswith('ref'):
         try:
             referrer_id = int(context.args[0][3:])
@@ -82,13 +82,13 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик нажатий на кнопки"""
     query = update.callback_query
-         await query.answer()
+    await query.answer()
 
     user = query.from_user
     user_id = user.id
     data_manager.update_user_name(user_id, get_user_name(user))
 
-    # Проверка подписки при нажатии кнопок (кроме кнопки подписки, если бы она была в инлайн, но здесь просто блокируем действия)
+    # Проверка подписки
     if not await check_subscription(user_id, context):
         await query.edit_message_text(
             "❗ Вы не подписаны на канал! Подпишитесь, чтобы играть.\n"
@@ -107,11 +107,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # === ГЛАВНОЕ МЕНЮ ===
     if query.data == 'click':
         result = process_click(user_id)
-
         ach_msg = ""
         if result["new_achievements"]:
             ach_names = [config.ACHIEVEMENTS[aid]["name"] for aid in result["new_achievements"]]
-            ach_msg = "\n\n" + "🎉 Новое достижение: " + ", ".join(ach_names) + "!"
+            ach_msg = "\n\n🎉 Новое достижение: " + ", ".join(ach_names) + "!"
 
         lines = [
             "🖱 Вы кликнули!",
@@ -145,7 +144,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         result = process_daily_bonus(user_id)
         if result["success"]:
             await query.edit_message_text(
-                "🎁 Получено " + format_number(result['bonus']) + " монет!" + "\n" + "Возвращайтесь завтра!",
+                "🎁 Получено " + format_number(result['bonus']) + " монет!\nВозвращайтесь завтра!",
                 reply_markup=get_main_menu()
             )
         else:
@@ -156,11 +155,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif query.data == 'achievements':
         ud = data_manager.user_data[user_id]
-        msg = "🏅 Ваши достижения:" + "\n"
+        msg = "🏅 Ваши достижения:\n"
         for key, ach in config.ACHIEVEMENTS.items():
             status = "✅" if key in ud["achievements"] else "❌"
             msg += status + " " + ach['name'] + " — " + ach['desc'] + "\n"
-        msg += "\n" + "👑 Ваше звание: " + ud['title']
+        msg += "\n👑 Ваше звание: " + ud['title']
         await query.edit_message_text(msg, reply_markup=get_main_menu())
 
     elif query.data == 'my_profile':
@@ -177,16 +176,16 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🔗 Ваша ссылка:",
             ref_link,
             "",
-            "👥 Приглашено: **" + str(ref_count) + "** друзей",
+            f"👥 Приглашено: **{ref_count}** друзей",
             "💎 За каждого: **2 Donat-коина**",
-            "💰 Всего получено: **" + str(ud['donate_coins']) + "** Donat-коинов"
+            f"💰 Всего получено: **{ud['donate_coins']}** Donat-коинов"
         ]
         await query.edit_message_text("\n".join(lines), parse_mode="HTML", reply_markup=get_main_menu())
 
     elif query.data == 'donat_shop':
         keyboard = get_donat_shop_keyboard()
         await query.edit_message_text(
-            "💎 **Donat-магазин (оплата звёздами)**" + "\n" + "Покупайте за ⭐:",
+            "💎 **Donat-магазин (оплата звёздами)**\nПокупайте за ⭐:",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
@@ -237,7 +236,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "💥 **Краш-игра**",
             "Ставка от 20 до 1 000 000 монет.",
             "",
-            " _Введите ставку в чат (например: 100)_"
+            "_Введите ставку в чат (например: 100)_"
         ]
         await query.edit_message_text("\n".join(lines), parse_mode="HTML")
         context.user_data["crash_state"] = "bet"
@@ -282,7 +281,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• ⚫ Чёрное (×1.9)",
             "• 🟢 Зелёное (×9.0, шанс 10%)",
             "",
-            " _Введите ставку в чат_"
+            "_Введите ставку в чат_"
         ]
         await query.edit_message_text("\n".join(lines), parse_mode="HTML")
         context.user_data["roulette_state"] = "bet"
@@ -327,7 +326,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Ставка от 100 до 1 000 000 монет.",
             "Шанс победы: 48% (бот берёт 4% комиссии).",
             "",
-            " _Введите ставку в чат_"
+            "_Введите ставку в чат_"
         ]
         await query.edit_message_text("\n".join(lines), parse_mode="HTML")
         context.user_data["duel_state"] = "bet"
@@ -341,9 +340,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if result["success"]:
             if result.get("new_achievement"):
                 await query.answer("🎉 Открыто достижение: Робо-помощник!", show_alert=True)
-                await query.edit_message_text(result["message"], reply_markup=get_main_menu())
-            else:
-                await query.answer(result["message"], show_alert=True)
+            await query.edit_message_text(result["message"], reply_markup=get_main_menu())
 
     elif query.data.startswith('buy_title_'):
         title_key = query.data[11:]
@@ -360,8 +357,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def mm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик команды /mm (мой профиль)"""
     user_id = update.effective_user.id
-    data_manager.update_user_name(user_id, get_user_name(update.effective_user))
-    
+    data_manager.update_name(user_id, get_user_name(update.effective_user))
+
     if not await check_subscription(user_id, context):
         keyboard = [[InlineKeyboardButton("📢 Подписаться на канал", url=f"https://t.me/{config.CHANNEL_USERNAME}")]]
         await update.message.reply_text(
@@ -370,7 +367,7 @@ async def mm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return
-        
+
     msg = get_profile_text(user_id)
     await update.message.reply_text(msg, parse_mode="HTML")
 
@@ -382,8 +379,6 @@ async def admins_panel_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text("❌ У вас нет доступа к этой команде.")
         return
 
-    from telegram import InlineKeyboardMarkup
     keyboard = get_admin_keyboard()
     msg = get_admin_panel_text()
-
     await update.message.reply_text(msg, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(keyboard))
