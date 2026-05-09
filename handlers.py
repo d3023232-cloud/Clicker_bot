@@ -16,7 +16,6 @@ from admin import (
     get_stats, get_user_info, get_econ_stats, get_user_display_name
 )
 
-
 def get_main_menu():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🏆 Топ", callback_data="top"), InlineKeyboardButton("🛒 Магазин", callback_data="shop")],
@@ -26,11 +25,14 @@ def get_main_menu():
         [InlineKeyboardButton("🖱 Клик!", callback_data="click")]
     ])
 
-
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_id = user.id
     data_manager.update_user_name(user_id, get_user_name(user))
+
+    if data_manager.user_data[user_id].get("banned", False):
+        await update.message.reply_text("🚫 Вы забанены.")
+        return
 
     if not await check_subscription(user_id, context):
         kb = [[InlineKeyboardButton("📢 Подписаться", url=f"https://t.me/{config.CHANNEL_USERNAME}")]]
@@ -57,22 +59,25 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = user.first_name or "Игрок"
     text = (
         "╔═══════════════════╗\n"
-        "      🎮 CLICKER BOT 🎮\n"
+        " 🎮 CLICKER BOT 🎮\n"
         "╚═══════════════════╝\n\n"
         f"👋 Привет, {name}!\n\n"
         "✨ Твой прогресс начинается здесь:\n"
-        "   🖱 Кликай → 🔧 Улучшай → 🏆 Будь первым\n\n"
+        " 🖱 Кликай → 🔧 Улучшай → 🏆 Будь первым\n\n"
         "🎁 Ежедневный бонус | 🎰 Мини-игры | 💎 Донат\n\n"
         "➡️ Жми «🖱 Клик!» и начни путь к славе! 👇"
     )
     await update.message.reply_text(text, reply_markup=get_main_menu())
-
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
     data_manager.update_user_name(user_id, get_user_name(query.from_user))
+
+    if data_manager.user_data[user_id].get("banned", False):
+        await query.edit_message_text("🚫 Вы забанены.")
+        return
 
     if not await check_subscription(user_id, context):
         await query.edit_message_text(
@@ -150,11 +155,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data.startswith("crash_multiplier_"):
         mult = float(query.data.split("_")[2])
         bet = context.user_data.get("crash_bet")
-        if not bet or context.user_data.get("crash_user_id") != user_id:
+        if not bet or context.user_data.get("game_user_id") != user_id:
             return await query.edit_message_text("❌ Сессия истекла.", reply_markup=get_main_menu())
         res = process_crash_game(user_id, bet, mult)
         await query.edit_message_text(res["message"], parse_mode="HTML", reply_markup=get_main_menu())
-        context.user_data.clear()
+        for key in list(context.user_data.keys()):
+            if key.startswith(("game_", "crash_", "roulette_", "duel_")):
+                context.user_data.pop(key, None)
     elif query.data == "game_roulette_start":
         res = start_roulette_game(user_id)
         if not res["success"]:
@@ -164,11 +171,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data.startswith("roulette_color_"):
         color = query.data.split("_")[2]
         bet = context.user_data.get("roulette_bet")
-        if not bet or context.user_data.get("roulette_user_id") != user_id:
+        if not bet or context.user_data.get("game_user_id") != user_id:
             return await query.edit_message_text("❌ Сессия истекла.", reply_markup=get_main_menu())
         res = process_roulette_game(user_id, bet, color)
         await query.edit_message_text(f"🎰 {res['message']}\n🪙 {format_number(int(res['balance']))}", parse_mode="HTML", reply_markup=get_main_menu())
-        context.user_data.clear()
+        for key in list(context.user_data.keys()):
+            if key.startswith(("game_", "crash_", "roulette_", "duel_")):
+                context.user_data.pop(key, None)
     elif query.data == "game_duel_start":
         res = start_duel_game(user_id)
         if not res["success"]:
@@ -186,15 +195,16 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data in ("back", "noop"):
         await query.edit_message_text("🎮 Главное меню:", reply_markup=get_main_menu())
 
-
 async def mm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
+    if data_manager.user_data[user_id].get("banned", False):
+        await update.message.reply_text("🚫 Вы забанены.")
+        return
     if not await check_subscription(user_id, context):
         await update.message.reply_text("❗ Подпишитесь на канал.", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("📢 Подписаться", url=f"https://t.me/{config.CHANNEL_USERNAME}")]]))
         return
     apply_league_tax(user_id)
     await update.message.reply_text(get_profile_text(user_id), parse_mode="HTML")
-
 
 async def admins_panel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
@@ -202,14 +212,15 @@ async def admins_panel_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         return
     await update.message.reply_text(get_admin_panel_text(), reply_markup=get_admin_main_keyboard())
 
-
 # ============================================================================
 # 🛠 АДМИН: ЛОГИКА
 # ============================================================================
 async def _admin_callback(query, context, user_id):
     data = query.data
     if data == "admin_main":
-        context.user_data.clear()
+        for key in list(context.user_data.keys()):
+            if key.startswith(("admin_", "game_", "crash_", "roulette_", "duel_")):
+                context.user_data.pop(key, None)
         return await query.edit_message_text("🛠 Админ-панель", reply_markup=get_admin_main_keyboard())
     if data in ("admin_stats", "admin_econ"):
         return await query.edit_message_text(get_econ_stats() if data == "admin_econ" else get_stats(), reply_markup=get_admin_main_keyboard())
@@ -240,13 +251,11 @@ async def _admin_callback(query, context, user_id):
             return await query.edit_message_text(f"👤 {get_user_display_name(uid, data_manager.user_data[uid])}\n💬 Введите значение:", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Отмена", callback_data="admin_main")]]))
         return await query.edit_message_text(get_user_info(uid), reply_markup=get_admin_main_keyboard())
 
-    # 🔥 ГЛАВНОЕ ИСПРАВЛЕНИЕ: разбор callback_data с подчёркиваниями в имени действия
     if data.startswith("admin_confirm_"):
         rest = data.replace("admin_confirm_", "")
-        # rsplit справа: action может содержать _, uid всегда последний
         action, uid_str = rest.rsplit("_", 1)
         uid = int(uid_str)
-        
+
         funcs = {
             "add_coins": action_add_coins, "remove_coins": action_remove_coins,
             "add_donate": action_add_donate, "remove_donate": action_remove_donate,
@@ -257,8 +266,10 @@ async def _admin_callback(query, context, user_id):
             res = funcs[action](uid, val)
         else:
             res = {"ban": action_ban, "unban": action_unban, "remove_premium": action_remove_premium, "reset": action_reset_user}.get(action, lambda u: {"success": False, "message": "❌ Неизвестное действие"})(uid)
-        
-        context.user_data.clear()
+
+        for key in list(context.user_data.keys()):
+            if key.startswith(("admin_", "game_", "crash_", "roulette_", "duel_")):
+                context.user_data.pop(key, None)
         return await query.edit_message_text(res["message"], reply_markup=get_admin_main_keyboard())
 
     if data == "admin_broadcast":
@@ -268,10 +279,34 @@ async def _admin_callback(query, context, user_id):
         context.user_data.update({"admin_action":"reset","admin_state":"search_input"})
         return await query.edit_message_text("🔄 Сброс: найдите игрока:", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Назад", callback_data="admin_main")]]))
 
-
 async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = update.message.text.strip()
+
+    # 🎮 Игровые ставки — проверяем ПЕРВЫМ делом, чтобы админ тоже мог играть
+    state = context.user_data.get("game_state")
+    if state and context.user_data.get("game_user_id") == user_id:
+        res = validate_bet(user_id, text, config.MIN_BET, config.MAX_BET)
+        if not res["success"]:
+            return await update.message.reply_text(res["message"])
+        bet = res["bet"]
+        if state == "crash":
+            context.user_data.update({"crash_bet":bet,"crash_user_id":user_id})
+            kb = [[InlineKeyboardButton(f"×{m}", callback_data=f"crash_multiplier_{m}") for m in [1.2,1.5,2.0,3.0,5.0]]]
+            kb.append([InlineKeyboardButton("⬅️ Отмена", callback_data="back")])
+            return await update.message.reply_text("💥 Выберите множитель:", reply_markup=InlineKeyboardMarkup(kb))
+        elif state == "roulette":
+            context.user_data.update({"roulette_bet":bet,"roulette_user_id":user_id})
+            return await update.message.reply_text("🎰 Цвет:", reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔴 Красное", callback_data="roulette_color_red"), InlineKeyboardButton("⚫ Чёрное", callback_data="roulette_color_black")],
+                [InlineKeyboardButton("🟢 Зелёное", callback_data="roulette_color_green")]]))
+        elif state == "duel":
+            context.user_data["duel_bet"] = bet
+            res_d = process_duel_game(user_id, bet)
+            for key in list(context.user_data.keys()):
+                if key.startswith(("game_", "crash_", "roulette_", "duel_")):
+                    context.user_data.pop(key, None)
+            return await update.message.reply_text(res_d["message"], reply_markup=get_main_menu())
 
     if is_admin(user_id):
         state = context.user_data.get("admin_state")
@@ -290,6 +325,9 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             kb.append([InlineKeyboardButton("🔍 Заново", callback_data="admin_search_prompt"), InlineKeyboardButton("⬅️ Отмена", callback_data="admin_main")])
             context.user_data.update({"admin_state":"select_from_list","admin_found_users":found})
             return await update.message.reply_text(f"🔍 Найдено {len(found)}:", reply_markup=InlineKeyboardMarkup(kb))
+
+        if state == "select_from_list":
+            return await update.message.reply_text("👆 Выберите пользователя из списка выше.")
 
         if state == "input_value":
             act = context.user_data.get("admin_action")
@@ -320,26 +358,3 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                     failed += 1
             context.user_data.pop("admin_state", None)
             return await update.message.reply_text(f"✅ Готово: {sent} | ❌ Ошибок: {failed}", reply_markup=get_admin_main_keyboard())
-
-    # 🎮 Игровые ставки
-    state = context.user_data.get("game_state")
-    if state and context.user_data.get("game_user_id") == user_id:
-        res = validate_bet(user_id, text, config.MIN_BET, config.MAX_BET)
-        if not res["success"]:
-            return await update.message.reply_text(res["message"])
-        bet = res["bet"]
-        if state == "crash":
-            context.user_data.update({"crash_bet":bet,"crash_user_id":user_id})
-            kb = [[InlineKeyboardButton(f"×{m}", callback_data=f"crash_multiplier_{m}")] for m in [1.2,1.5,2.0,3.0,5.0]]
-            kb.append([InlineKeyboardButton("⬅️ Отмена", callback_data="back")])
-            return await update.message.reply_text("💥 Выберите множитель:", reply_markup=InlineKeyboardMarkup(kb))
-        elif state == "roulette":
-            context.user_data.update({"roulette_bet":bet,"roulette_user_id":user_id})
-            return await update.message.reply_text("🎰 Цвет:", reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔴 Красное", callback_data="roulette_color_red"), InlineKeyboardButton("⚫ Чёрное", callback_data="roulette_color_black")],
-                [InlineKeyboardButton("🟢 Зелёное", callback_data="roulette_color_green")]]))
-        elif state == "duel":
-            context.user_data["duel_bet"] = bet
-            res_d = process_duel_game(user_id, bet)
-            context.user_data.clear()
-            return await update.message.reply_text(res_d["message"], reply_markup=get_main_menu())
