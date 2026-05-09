@@ -32,10 +32,10 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = user.id
     data_manager.update_user_name(user_id, get_user_name(user))
 
-    # Проверка подписки
+    # 🔒 1. Проверка подписки на канал
     if not await check_subscription(user_id, context):
         keyboard = [[InlineKeyboardButton("📢 Подписаться на канал", url=f"https://t.me/{config.CHANNEL_USERNAME}")]]
-        await update.message.reply_text(
+          await update.message.reply_text(
             "❗ Для использования бота необходимо подписаться на наш канал:\n"
             f"@{config.CHANNEL_USERNAME}\n\n"
             "После подписки нажмите /start снова.",
@@ -43,11 +43,11 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # Реферальная система
+    # 🤝 2. Реферальная система (если есть ссылка)
     if context.args and context.args[0].startswith('ref'):
         try:
             referrer_id = int(context.args[0][3:])
-            if referrer_id != user_id and data_manager.user_data[user_id]["referrer_id"] is None:
+            if referrer_id != user_id and data_manager.user_data[user_id].get("referrer_id") is None:
                 data_manager.user_data[user_id]["referrer_id"] = referrer_id
                 data_manager.user_data[referrer_id]["donate_coins"] += 2
                 data_manager.save_data()
@@ -63,27 +63,22 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     data_manager.save_data()
 
-    from utils import get_time_greeting
-    greeting = get_time_greeting()
-    ref_link = f"https://t.me/{config.YOUR_BOT_USERNAME}?start=ref{user_id}"
+    # 🎨 3. Приветственное сообщение
+    user_name = user.first_name or "Игрок"
+    welcome_text = (
+        "╔════════════════════╗\n"
+        "   🎮 CLICKER BOT 🎮\n"
+        "╚════════════════════╝\n\n"
+        f"👋 Привет, {user_name}!\n\n"
+        "✨ Твой прогресс начинается здесь:\n"
+        "   🖱 Кликай → 💰 Копи → 🔧 Улучшай → 🏆 Побеждай\n\n"
+        "🎁 Не забудь забрать ежедневный бонус!\n"
+        "🎰 Испытай удачу в мини-играх!\n\n"
+        "➡️ Жми кнопку «🖱 Клик!» и начни путь к славе! 👇"
+    )
 
-welcome_text = (
-    "╔════════════════════╗\n"
-    "   🎮 CLICKER BOT 🎮\n"
-    "╚════════════════════╝\n"
-    "\n"
-    "👋 Привет, игрок!\n"
-    "\n"
-    "✨ Твой прогресс начинается здесь:\n"
-    "   🖱 Кликай → 💰 Копи → 🔧 Улучшай → 🏆 Побеждай\n"
-    "\n"
-    "🎁 Не забудь забрать ежедневный бонус!\n"
-    "🎰 Испытай удачу в мини-играх!\n"
-    "\n"
-    "➡️ Жми кнопку «🖱 Клик!» и начни путь к славе! 👇"
-)
-
-await update.message.reply_text(welcome_text, reply_markup=get_main_menu())
+    # ⚠️ Важно: await находится ВНУТРИ async def, с правильными отступами
+          await update.message.reply_text(welcome_text, reply_markup=get_main_menu())
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик нажатий на кнопки"""
