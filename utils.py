@@ -1,9 +1,55 @@
 """Helper functions"""
 import time
 import random
+import json
+import os
 import config
 from telegram import Bot
 
+# 📊 ЭКОНОМИКА: Загрузка и управление конфигами экономики
+ECONOMY_FILE = "economy.json"
+_economy_cache = None
+
+def load_economy():
+    """📊 Загружает конфиг экономики (кэширует в памяти)"""
+    global _economy_cache
+    if _economy_cache:
+        return _economy_cache
+    try:
+        if os.path.exists(ECONOMY_FILE):
+            with open(ECONOMY_FILE, "r", encoding="utf-8") as f:
+                _economy_cache = json.load(f)
+        else:
+            _economy_cache = {
+                "income": {"click_base": 1.0, "daily_base": 20, "auto_cap_pct": 0.4, "inactive_decay_mult": 0.3},
+                "pricing": {"cost_multiplier": 2.8, "diminishing_effect": True},
+                "tax_rates": {"🥉 Бронза": 0.0, "🥈 Серебро": 0.005, "🥇 Золото": 0.01, "💎 Алмаз": 0.015},
+                "games": {"max_bet_pct": 0.1, "house_edge": 0.02, "min_bet": 20},
+                "limits": {"click_base": [0.1, 5.0], "cost_multiplier": [1.5, 5.0], "max_bet_pct": [0.01, 0.5]}
+            }
+            save_economy(_economy_cache)
+    except Exception as e:
+        print(f"⚠️ Ошибка загрузки экономики: {e}")
+    return _economy_cache
+
+def get_econ(key: str):
+    """📊 Безопасно достаёт значение по пути (например: 'income.click_base')"""
+    econ = load_economy()
+    keys = key.split(".")
+    val = econ
+    for k in keys:
+        val = val[k]
+    return val
+
+def save_economy(data=None):
+    """📊 Сохраняет изменения в economy.json"""
+    global _economy_cache
+    if data:
+        _economy_cache = data
+    with open(ECONOMY_FILE, "w", encoding="utf-8") as f:
+        json.dump(_economy_cache, f, indent=2, ensure_ascii=False)
+
+# --- Оригинальные функции ---
 def format_number(n: int) -> str:
     return f"{int(n):,}".replace(",", " ")
 
@@ -45,11 +91,9 @@ async def check_subscription(user_id, context):
     """Проверяет подписку пользователя на канал"""
     try:
         member = await context.bot.get_chat_member(chat_id=f"@{config.CHANNEL_USERNAME}", user_id=user_id)
-        # left - был и вышел, kicked - забанен, restricted - ограничен
         if member.status in ['left', 'kicked']:
             return False
         return True
     except Exception as e:
         print(f"Ошибка проверки подписки: {e}")
-        # Если ошибка (например, бот не админ в канале), считаем что подписан, чтобы не ломать игру
         return True
