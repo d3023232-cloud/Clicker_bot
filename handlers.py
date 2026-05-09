@@ -35,7 +35,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # 🔒 1. Проверка подписки на канал
     if not await check_subscription(user_id, context):
         keyboard = [[InlineKeyboardButton("📢 Подписаться на канал", url=f"https://t.me/{config.CHANNEL_USERNAME}")]]
-          await update.message.reply_text(
+        await update.message.reply_text(
             "❗ Для использования бота необходимо подписаться на наш канал:\n"
             f"@{config.CHANNEL_USERNAME}\n\n"
             "После подписки нажмите /start снова.",
@@ -56,9 +56,9 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         chat_id=referrer_id,
                         text="🎁 Вы получили 2 Donat-коина за приглашённого друга!"
                     )
-                except:
+                except Exception:
                     pass
-        except:
+        except ValueError:
             pass
 
     data_manager.save_data()
@@ -77,8 +77,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "➡️ Жми кнопку «🖱 Клик!» и начни путь к славе! 👇"
     )
 
-    # ⚠️ Важно: await находится ВНУТРИ async def, с правильными отступами
-          await update.message.reply_text(welcome_text, reply_markup=get_main_menu())
+    await update.message.reply_text(welcome_text, reply_markup=get_main_menu())
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик нажатий на кнопки"""
