@@ -1,10 +1,83 @@
-"""Admin commands"""
-import time
+
+ """Admin commands"""
+import time, os, json
 import config
 import data_manager
 from game_logic import update_league
-from utils import format_number, is_premium_active
+from utils import format_number, is_premium_active, get_econ, load_economy, save_economy
 
+ECON_LOG_FILE = "economy_log.json"
+
+def log_econ_change(user_id, key, old_val, new_val):
+    log_entry = {"time": time.strftime("%Y-%m-%d %H:%M:%S"), "admin_id": user_id, "key": key, "old": old_val, "new": new_val}
+    logs = []
+    if os.path.exists(ECON_LOG_FILE):
+        try:
+            with open(ECON_LOG_FILE, "r") as f: logs = json.load(f)
+        except: pass
+    logs.append(log_entry)
+    if len(logs) > 50: logs = logs[-50:]
+    with open(ECON_LOG_FILE, "w") as f: json.dump(logs, f, indent=2)
+
+def handle_econ_command(user_id, args):
+    """📊 Команда админа /econ для управления экономикой на лету"""
+    if user_id not in config.ADMIN_IDS:
+        return "❌ У вас нет доступа к этой команде."
+
+    econ = load_economy()
+    limits = econ.get("limits", {})
+
+    if not args:
+        return "📖 Использование:\n`/econ view`\n`/econ set <путь.ключ> <значение>`\n`/econ reset`\n`/econ log`"
+
+    action = args[0]
+
+    if action == "view":
+        view_econ = {k: v for k, v in econ.items() if k != "limits"}
+        return f"📊 Текущая экономика:\n```{json.dumps(view_econ, indent=2, ensure_ascii=False)}```"
+
+    if action == "reset":
+        save_economy(None)
+        load_economy()
+        return "🔄 Экономика сброшена до стандартных настроек."
+
+    if action == "log":
+        if not os.path.exists(ECON_LOG_FILE): return "📜 Логи пусты."
+        with open(ECON_LOG_FILE, "r") as f: logs = json.load(f)
+        msg = "📜 Последние изменения:\n"
+        for l in reversed(logs[-10:]):
+            msg += f"`{l['time']}` | ID:{l['admin_id']} | `{l['key']}`: {l['old']} → {l['new']}\n"
+        return msg
+
+    if action == "set":
+        if len(args) < 3: return "❌ Пример: `/econ set games.max_bet_pct 0.15`"
+        key = args[1]
+        try:
+            new_val = float(args[2])
+        except ValueError:
+            return "❌ Значение должно быть числом."
+
+        keys = key.split(".")
+        target = econ
+        for k in keys[:-1]:
+            if k not in target: return f"❌ Неверный путь: `{k}`"
+            target = target[k]
+        if keys[-1] not in target: return f"❌ Ключ `{keys[-1]}` не найден."
+
+        if key in limits:
+            low, high = limits[key]
+            if not (low <= new_val <= high):
+                return f"⚠️ Значение должно быть от `{low}` до `{high}`"
+
+        old_val = target[keys[-1]]
+        target[keys[-1]] = new_val
+        save_economy(econ)
+        log_econ_change(user_id, key, old_val, new_val)
+        return f"✅ `{key}` изменён: `{old_val}` → `{new_val}`"
+
+    return "❌ Неизвестная команда. Используйте `/econ view`"
+
+# --- Оригинальные админ-функции ---
 def is_admin(user_id):
     return user_id in config.ADMIN_IDS
 
@@ -21,7 +94,8 @@ def get_admin_panel_text():
         "/stats - Статистика бота",
         "/ban_user [id] - Забанить пользователя",
         "/broadcast [сообщение] - Рассылка",
-        "/admins - Это меню"
+        "/admins - Это меню",
+        "/econ view/set/log - Управление экономикой 📊"
     ]
     return "\n".join(lines)
 
@@ -36,7 +110,8 @@ def get_admin_keyboard():
         [InlineKeyboardButton("🚫 Бан (/ban_user)", callback_data="admin_cmd_ban_user")],
         [InlineKeyboardButton("📢 Рассылка (/broadcast)", callback_data="admin_cmd_broadcast")],
         [InlineKeyboardButton("🔄 Сброс (/reset_user)", callback_data="admin_cmd_reset_user")],
-        [InlineKeyboardButton("🐞 Отладка (/debug)", callback_data="admin_cmd_debug")]
+        [InlineKeyboardButton("🐞 Отладка (/debug)", callback_data="admin_cmd_debug")],
+        [InlineKeyboardButton("⚙️ Экономика (/econ)", callback_data="admin_cmd_econ")]
     ]
 
 def get_admin_command_description(cmd):
@@ -49,7 +124,8 @@ def get_admin_command_description(cmd):
         "ban_user": "/ban_user <id> - Забанить юзера",
         "broadcast": "/broadcast <текст> - Отправить всем",
         "reset_user": "/reset_user <id> - Полный сброс данных",
-        "debug": "/debug - Показать отладочную инфо"
+        "debug": "/debug - Показать отладочную инфо",
+        "econ": "/econ - Управление экономикой"
     }
     return descriptions.get(cmd, "Команда не найдена")
 
