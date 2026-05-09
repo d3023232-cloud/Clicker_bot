@@ -41,12 +41,12 @@ def get_admin_keyboard():
     ]
 
 
-# Алиас для совместимости с разными версиями handlers.py
+# Алиас для совместимости
 get_admin_main_keyboard = get_admin_keyboard
 
 
 def get_admin_command_description(cmd):
-    """Описание команд для старых callback-обработчиков"""
+    """Описание команд для callback-обработчиков"""
     descriptions = {
         "stats": "Статистика бота", "add_coins": "Выдать монеты", "give_donate": "Выдать донат-коины",
         "give_premium": "Выдать премиум", "get_user": "Инфо о пользователе", "reset_user": "Сбросить пользователя",
@@ -77,7 +77,7 @@ def find_user_by_query(query: str):
     query = query.strip().lower().lstrip('@')
     if query.isdigit():
         uid = int(query)
-        if uid in data_manager.user_
+        if uid in data_manager.user_data:
             return uid, data_manager.user_data[uid]
     for uid, data in data_manager.user_data.items():
         name = data.get("name", "").lower()
@@ -209,7 +209,7 @@ def get_stats():
 
 def get_user_info(uid):
     """Детальная информация о пользователе"""
-    if uid not in data_manager.user_
+    if uid not in data_manager.user_data:
         return "❌ Пользователь не найден"
     
     ud = data_manager.user_data[uid]
