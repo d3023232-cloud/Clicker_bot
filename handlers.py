@@ -68,9 +68,9 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     greeting = get_time_greeting()
     user_name = user.first_name or "Игрок"
     welcome_text = (
-        "╔════════════════════╗\n"
+        "╔═══════════════════╗\n"
         "     🎮 CLICKER BOT 🎮\n"
-        "╚════════════════════╝\n\n"
+        "╚═══════════════════╝\n\n"
         f"👋 Привет, {user_name}!\n\n"
         "✨ Твой прогресс начинается здесь:\n"
         "   🖱 Кликай → 🔧 Улучшай → 🏆 Будь первым\n\n"
