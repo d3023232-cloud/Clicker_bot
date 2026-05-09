@@ -1,15 +1,15 @@
 """Основные обработчики бота"""
 import time
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, CommandHandler
 
 import config
 import data_manager
-from utils import get_user_name, is_premium_active, format_number, check_subscription
-from game_logic import process_click, get_profile_text, get_top_text, process_daily_bonus
+from utils import get_user_name, is_premium_active, format_number, check_subscription, get_econ
+from game_logic import process_click, get_profile_text, get_top_text, process_daily_bonus, apply_league_tax
 from shop import buy_upgrade, buy_title, get_shop_upgrades_keyboard, get_shop_titles_keyboard, get_donat_shop_keyboard
 from minigames import validate_bet, start_crash_game, process_crash_game, start_roulette_game, process_roulette_game, start_duel_game, process_duel_game
-from admin import is_admin, get_admin_panel_text, get_admin_keyboard, get_admin_command_description
+from admin import is_admin, get_admin_panel_text, get_admin_keyboard, get_admin_command_description, handle_econ_command
 
 def get_main_menu():
     """Главное меню с кнопками"""
@@ -32,7 +32,6 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = user.id
     data_manager.update_user_name(user_id, get_user_name(user))
 
-    # 🔒 1. Проверка подписки на канал
     if not await check_subscription(user_id, context):
         keyboard = [[InlineKeyboardButton("📢 Подписаться на канал", url=f"https://t.me/{config.CHANNEL_USERNAME}")]]
         await update.message.reply_text(
@@ -43,7 +42,6 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # 🤝 2. Реферальная система
     if context.args and context.args[0].startswith('ref'):
         try:
             referrer_id = int(context.args[0][3:])
@@ -62,8 +60,12 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
     data_manager.save_data()
+    
+    # 📊 ЭКОНОМИКА: Применяем налог при входе
+    apply_league_tax(user_id)
 
-    # 🎨 3. Приветственное сообщение
+    from utils import get_time_greeting
+    greeting = get_time_greeting()
     user_name = user.first_name or "Игрок"
     welcome_text = (
         "╔════════════════════╗\n"
@@ -88,7 +90,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = user.id
     data_manager.update_user_name(user_id, get_user_name(user))
 
-    # Проверка подписки
     if not await check_subscription(user_id, context):
         await query.edit_message_text(
             "❗ Вы не подписаны на канал! Подпишитесь, чтобы играть.\n"
@@ -97,14 +98,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # Админ-панель кнопки
     if query.data.startswith('admin_cmd_'):
         cmd = query.data[10:]
         desc = get_admin_command_description(cmd)
         await query.answer(desc, show_alert=True)
         return
 
-    # === ГЛАВНОЕ МЕНЮ ===
     if query.data == 'click':
         result = process_click(user_id)
         ach_msg = ""
@@ -215,7 +214,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             print("❌ Ошибка при отправке инвойса: " + str(e))
             await query.edit_message_text("❌ Ошибка при создании инвойса.", reply_markup=get_main_menu())
 
-    # === МИНИ-ИГРЫ ===
     elif query.data == 'minigames':
         keyboard = [
             [InlineKeyboardButton("💥 Краш (20–1 000 000 🪙)", callback_data='game_crash_start')],
@@ -225,7 +223,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         await query.edit_message_text("🎮 Выберите мини-игру:", reply_markup=InlineKeyboardMarkup(keyboard))
 
-    # === КРАШ ===
     elif query.data == 'game_crash_start':
         result = start_crash_game(user_id)
         if not result["success"]:
@@ -239,8 +236,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "_Введите ставку в чат (например: 100)_"
         ]
         await query.edit_message_text("\n".join(lines), parse_mode="HTML")
-        context.user_data["crash_state"] = "bet"
-        context.user_data["crash_user_id"] = user_id
+        context.user_data["game_state"] = "crash"
+        context.user_data["game_user_id"] = user_id
 
     elif query.data.startswith('crash_multiplier_'):
         try:
@@ -253,20 +250,17 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 return
 
             result = process_crash_game(user_id, bet, multiplier)
-
             if not result["success"]:
                 await query.edit_message_text(result["message"], reply_markup=get_main_menu())
                 return
 
             await query.edit_message_text(result["message"], parse_mode="HTML", reply_markup=get_main_menu())
-
             context.user_data.pop("crash_state", None)
             context.user_data.pop("crash_bet", None)
             context.user_data.pop("crash_user_id", None)
         except Exception as e:
             await query.edit_message_text("❌ Ошибка: " + str(e), reply_markup=get_main_menu())
 
-    # === РУЛЕТКА ===
     elif query.data == 'game_roulette_start':
         result = start_roulette_game(user_id)
         if not result["success"]:
@@ -284,8 +278,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "_Введите ставку в чат_"
         ]
         await query.edit_message_text("\n".join(lines), parse_mode="HTML")
-        context.user_data["roulette_state"] = "bet"
-        context.user_data["roulette_user_id"] = user_id
+        context.user_data["game_state"] = "roulette"
+        context.user_data["game_user_id"] = user_id
 
     elif query.data.startswith('roulette_color_'):
         color = query.data.split('_')[2]
@@ -297,7 +291,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         result = process_roulette_game(user_id, bet, color)
-
         if not result["success"]:
             await query.edit_message_text(result["message"], reply_markup=get_main_menu())
             return
@@ -309,12 +302,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🪙 Баланс: " + format_number(int(result['balance']))
         ]
         await query.edit_message_text("\n".join(lines), parse_mode="HTML", reply_markup=get_main_menu())
-
         context.user_data.pop("roulette_state", None)
         context.user_data.pop("roulette_bet", None)
         context.user_data.pop("roulette_user_id", None)
 
-    # === ДУЭЛЬ ===
     elif query.data == 'game_duel_start':
         result = start_duel_game(user_id)
         if not result["success"]:
@@ -329,14 +320,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "_Введите ставку в чат_"
         ]
         await query.edit_message_text("\n".join(lines), parse_mode="HTML")
-        context.user_data["duel_state"] = "bet"
-        context.user_data["duel_user_id"] = user_id
+        context.user_data["game_state"] = "duel"
+        context.user_data["game_user_id"] = user_id
 
-    # === ПОКУПКИ ===
     elif query.data.startswith('buy_upg_'):
         upg_key = query.data[8:]
         result = buy_upgrade(user_id, upg_key)
-
         if result["success"]:
             if result.get("new_achievement"):
                 await query.answer("🎉 Открыто достижение: Робо-помощник!", show_alert=True)
@@ -345,7 +334,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data.startswith('buy_title_'):
         title_key = query.data[11:]
         result = buy_title(user_id, title_key)
-
         if result["success"]:
             await query.edit_message_text(result["message"], reply_markup=get_main_menu())
         else:
@@ -355,10 +343,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("🎮 Главное меню:", reply_markup=get_main_menu())
 
 async def mm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик команды /mm (мой профиль)"""
     user_id = update.effective_user.id
-    data_manager.update_name(user_id, get_user_name(update.effective_user))
-
+    data_manager.update_user_name(user_id, get_user_name(update.effective_user))
+    
     if not await check_subscription(user_id, context):
         keyboard = [[InlineKeyboardButton("📢 Подписаться на канал", url=f"https://t.me/{config.CHANNEL_USERNAME}")]]
         await update.message.reply_text(
@@ -367,14 +354,13 @@ async def mm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return
-
+        
+    apply_league_tax(user_id)
     msg = get_profile_text(user_id)
     await update.message.reply_text(msg, parse_mode="HTML")
 
 async def admins_panel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик команды /admins"""
     user_id = update.effective_user.id
-
     if not is_admin(user_id):
         await update.message.reply_text("❌ У вас нет доступа к этой команде.")
         return
@@ -382,3 +368,44 @@ async def admins_panel_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     keyboard = get_admin_keyboard()
     msg = get_admin_panel_text()
     await update.message.reply_text(msg, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(keyboard))
+
+# 📊 ЭКОНОМИКА: Обработчик ввода ставок и /econ
+async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    text = update.message.text.strip()
+    
+    # /econ команда
+    if text.startswith("/econ"):
+        args = text.split()[1:]
+        result = handle_econ_command(user_id, args)
+        await update.message.reply_text(result, parse_mode="HTML")
+        return
+
+    # Ввод ставок
+    state = context.user_data.get("game_state")
+    if state and context.user_data.get("game_user_id") == user_id:
+        result = validate_bet(user_id, text)
+        if not result["success"]:
+            await update.message.reply_text(result["message"])
+            return
+
+        bet = result["bet"]
+        if state == "crash":
+            context.user_data["crash_bet"] = bet
+            context.user_data["crash_user_id"] = user_id
+            keyboard = [[InlineKeyboardButton(f"×{m}", callback_data=f"crash_multiplier_{m}")] for m in [1.2, 1.5, 2.0, 3.0, 5.0]]
+            keyboard.append([InlineKeyboardButton("⬅️ Отмена", callback_data="back")])
+            await update.message.reply_text("💥 Выберите коэффициент для вывода:", reply_markup=InlineKeyboardMarkup(keyboard))
+        elif state == "roulette":
+            context.user_data["roulette_bet"] = bet
+            context.user_data["roulette_user_id"] = user_id
+            await update.message.reply_text("🎰 Выберите цвет:", reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔴 Красное", callback_data="roulette_color_red"), InlineKeyboardButton("⚫ Чёрное", callback_data="roulette_color_black")],
+                [InlineKeyboardButton("🟢 Зелёное", callback_data="roulette_color_green")]
+            ]))
+        elif state == "duel":
+            context.user_data["duel_bet"] = bet
+            result_duel = process_duel_game(user_id, bet)
+            await update.message.reply_text(result_duel["message"], reply_markup=get_main_menu())
+            context.user_data.pop("game_state", None)
+            context.user_data.pop("game_user_id", None)
