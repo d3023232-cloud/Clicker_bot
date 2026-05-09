@@ -286,17 +286,17 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     # 🎮 Игровые ставки — проверяем ПЕРВЫМ делом, чтобы админ тоже мог играть
     state = context.user_data.get("game_state")
     if state and context.user_data.get("game_user_id") == user_id:
-        res = validate_bet(user_id, text, config.MIN_BET, config.MAX_BET)
+        res = validate_bet(user_id, text)
         if not res["success"]:
             return await update.message.reply_text(res["message"])
         bet = res["bet"]
         if state == "crash":
-            context.user_data.update({"crash_bet":bet,"crash_user_id":user_id})
-            kb = [[InlineKeyboardButton(f"×{m}", callback_data=f"crash_multiplier_{m}") for m in [1.2,1.5,2.0,3.0,5.0]]]
+            context.user_data.update({"crash_bet": bet, "crash_user_id": user_id})
+            kb = [[InlineKeyboardButton(f"×{m}", callback_data=f"crash_multiplier_{m}") for m in [1.2, 1.5, 2.0, 3.0, 5.0]]]
             kb.append([InlineKeyboardButton("⬅️ Отмена", callback_data="back")])
             return await update.message.reply_text("💥 Выберите множитель:", reply_markup=InlineKeyboardMarkup(kb))
         elif state == "roulette":
-            context.user_data.update({"roulette_bet":bet,"roulette_user_id":user_id})
+            context.user_data.update({"roulette_bet": bet, "roulette_user_id": user_id})
             return await update.message.reply_text("🎰 Цвет:", reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("🔴 Красное", callback_data="roulette_color_red"), InlineKeyboardButton("⚫ Чёрное", callback_data="roulette_color_black")],
                 [InlineKeyboardButton("🟢 Зелёное", callback_data="roulette_color_green")]]))
