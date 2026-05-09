@@ -69,7 +69,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = user.first_name or "Игрок"
     welcome_text = (
         "╔═══════════════════╗\n"
-        "     🎮 CLICKER BOT 🎮\n"
+        "      🎮 CLICKER BOT 🎮\n"
         "╚═══════════════════╝\n\n"
         f"👋 Привет, {user_name}!\n\n"
         "✨ Твой прогресс начинается здесь:\n"
