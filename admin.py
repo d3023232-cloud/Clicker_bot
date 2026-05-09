@@ -48,16 +48,9 @@ get_admin_main_keyboard = get_admin_keyboard
 def get_admin_command_description(cmd):
     """Описание команд для старых callback-обработчиков"""
     descriptions = {
-        "stats": "Статистика бота",
-        "add_coins": "Выдать монеты",
-        "give_donate": "Выдать донат-коины",
-        "give_premium": "Выдать премиум",
-        "get_user": "Инфо о пользователе",
-        "reset_user": "Сбросить пользователя",
-        "broadcast": "Рассылка",
-        "ban_user": "Забанить",
-        "debug": "Отладка",
-        "econ": "Статистика экономики"
+        "stats": "Статистика бота", "add_coins": "Выдать монеты", "give_donate": "Выдать донат-коины",
+        "give_premium": "Выдать премиум", "get_user": "Инфо о пользователе", "reset_user": "Сбросить пользователя",
+        "broadcast": "Рассылка", "ban_user": "Забанить", "debug": "Отладка", "econ": "Статистика экономики"
     }
     return descriptions.get(cmd, "Неизвестная команда")
 
@@ -84,7 +77,7 @@ def find_user_by_query(query: str):
     query = query.strip().lower().lstrip('@')
     if query.isdigit():
         uid = int(query)
-        if uid in data_manager.user_data:
+        if uid in data_manager.user_
             return uid, data_manager.user_data[uid]
     for uid, data in data_manager.user_data.items():
         name = data.get("name", "").lower()
@@ -185,3 +178,73 @@ def action_reset_user(uid):
         return {"success": False, "message": "❌ Пользователь не найден"}
     data_manager.reset_user_data(uid)
     return {"success": True, "message": f"🔄 Данные пользователя {get_user_display_name(uid, data_manager.user_data[uid])} сброшены"}
+
+
+# === ИНФОРМАЦИОННЫЕ ФУНКЦИИ ===
+
+def get_stats():
+    """Статистика бота"""
+    total_players = len([u for u in data_manager.user_data if data_manager.user_data[u].get("coins", 0) > 0 or data_manager.user_data[u].get("clicks", 0) > 0])
+    total_coins = sum(u.get("coins", 0) for u in data_manager.user_data.values())
+    total_donate = sum(u.get("donate_coins", 0) for u in data_manager.user_data.values())
+    
+    top_list = [(uid, data["coins"]) for uid, data in data_manager.user_data.items() if data.get("coins", 0) > 0]
+    if top_list:
+        top_player = max(top_list, key=lambda x: x[1])
+        top_name = get_user_display_name(top_player[0], data_manager.user_data[top_player[0]])
+        top_league = data_manager.user_data[top_player[0]].get("league", "-")
+        top_str = f"{top_name} [{top_league}] - {format_number(int(top_player[1]))} 💰"
+    else:
+        top_str = "-"
+        
+    lines = [
+        "📊 Статистика бота:",
+        f"👥 Активных игроков: {total_players}",
+        f"💰 Всего монет в игре: {format_number(int(total_coins))}",
+        f"💎 Всего донат-коинов: {int(total_donate)}",
+        f"🏆 Топ игрок: {top_str}"
+    ]
+    return "\n".join(lines)
+
+
+def get_user_info(uid):
+    """Детальная информация о пользователе"""
+    if uid not in data_manager.user_
+        return "❌ Пользователь не найден"
+    
+    ud = data_manager.user_data[uid]
+    name = get_user_display_name(uid, ud)
+    
+    lines = [
+        f"👤 {name} (ID: {uid})",
+        f"💰 Монеты: {format_number(int(ud.get('coins', 0)))}",
+        f"💎 Донат: {ud.get('donate_coins', 0)}",
+        f"🖱 Клики: {format_number(ud.get('clicks', 0))}",
+        f"⚡ Сила клика: {ud.get('click_power', 1)}",
+        f"🤖 Авто-кликер: {ud.get('auto_clicker', 0)} монет/мин",
+        f"🏅 Лига: {ud.get('league', '🥉 Бронза')}",
+        f"📛 Звание: {ud.get('title', 'Новичок')}",
+        f"⭐ Премиум: {'Да' if is_premium_active(ud) else 'Нет'}",
+        f"🚫 Забанен: {'Да' if ud.get('banned', False) else 'Нет'}",
+        f"🏆 Достижения: {', '.join(config.ACHIEVEMENTS.get(k, {}).get('name', k) for k in ud.get('achievements', set())) or '-'}"
+    ]
+    return "\n".join(lines)
+
+
+def get_econ_stats():
+    """Статистика экономики"""
+    total_coins = sum(u.get("coins", 0) for u in data_manager.user_data.values())
+    total_spent = sum(u.get("total_spent", 0) for u in data_manager.user_data.values())
+    total_issued = total_coins + total_spent
+    active_players = len([u for u in data_manager.user_data.values() if u.get("coins", 0) > 0 or u.get("clicks", 0) > 0])
+    
+    lines = [
+        "📈 Экономика бота:",
+        f"💰 Всего выпущено: {format_number(int(total_issued))}",
+        f"🔥 Всего потрачено: {format_number(int(total_spent))}",
+        f"🪙 В обращении: {format_number(int(total_coins))}",
+        f"👥 Активных игроков: {active_players}",
+        "",
+        f"📊 Инфляция: {format_number(int(total_spent / max(1, total_issued) * 100))}% монет уже потрачено"
+    ]
+    return "\n".join(lines)
