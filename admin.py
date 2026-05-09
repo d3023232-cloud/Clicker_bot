@@ -20,12 +20,11 @@ def get_admin_panel_text():
     )
 
 
-def get_admin_keyboard():
-    """Клавиатура админ-панели с логическими группами"""
-    from telegram import InlineKeyboardButton
-    return [
-        [InlineKeyboardButton("📊 Статистика", callback_data="admin_stats"),
-         InlineKeyboardButton("📈 Экономика", callback_data="admin_econ")],
+def get_admin_main_keyboard():
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    keyboard = [
+        [InlineKeyboardButton("📊 Статистика", callback_data="admin_stats")],
+        [InlineKeyboardButton("📈 Экономика", callback_data="admin_econ")],
         [InlineKeyboardButton("🔍 Поиск игрока", callback_data="admin_search_prompt")],
         [InlineKeyboardButton("➕ 💰 Выдать", callback_data="admin_action_add_coins"),
          InlineKeyboardButton("➖ 🔻 Забрать", callback_data="admin_action_remove_coins")],
@@ -39,6 +38,7 @@ def get_admin_keyboard():
          InlineKeyboardButton("🔄 Сброс", callback_data="admin_reset_user")],
         [InlineKeyboardButton("⬅️ В главное меню", callback_data="back")]
     ]
+    return InlineKeyboardMarkup(keyboard)  # ← Оборачиваем в InlineKeyboardMarkup!
 
 
 # Алиас для совместимости
