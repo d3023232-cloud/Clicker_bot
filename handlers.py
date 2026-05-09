@@ -83,7 +83,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик нажатий на кнопки"""
     query = update.callback_query
-    await query.answer()
+         await query.answer()
 
     user = query.from_user
     user_id = user.id
