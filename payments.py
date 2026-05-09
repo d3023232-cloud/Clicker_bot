@@ -1,4 +1,3 @@
-"""Telegram Stars payments"""
 import config
 import data_manager
 
@@ -17,9 +16,9 @@ async def successful_payment_handler(update, context):
             data_manager.user_data[user_id]["donate_coins"] += item["cost"]
             data_manager.save_data()
             await update.message.reply_text(
-                "Payment successful!" + chr(10) + f"You got: {item['name']} ({item['cost']} diamonds)"
+                "✅ Оплата прошла успешно!" + "\n" + f"Вы получили: {item['name']} ({item['cost']} донат-коинов) 💎"
             )
         else:
-            await update.message.reply_text("Unknown item.")
+            await update.message.reply_text("❌ Неизвестный товар.")
     else:
-        await update.message.reply_text("Unknown payment.")
+        await update.message.reply_text("❌ Неизвестный платеж.")
