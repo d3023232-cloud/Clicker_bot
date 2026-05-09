@@ -25,6 +25,13 @@ def get_main_menu():
         [InlineKeyboardButton("🖱 Клик!", callback_data="click")]
     ])
 
+def get_subscription_keyboard():
+    """Клавиатура для проверки подписки"""
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📢 Перейти в канал", url=f"https://t.me/{config.CHANNEL_USERNAME}")],
+        [InlineKeyboardButton("✅ Я подписался — проверить", callback_data="check_subscription")]
+    ])
+
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_id = user.id
@@ -35,8 +42,17 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not await check_subscription(user_id, context):
-        kb = [[InlineKeyboardButton("📢 Подписаться", url=f"https://t.me/{config.CHANNEL_USERNAME}")]]
-        await update.message.reply_text("❗ Для игры подпишитесь на канал.", reply_markup=InlineKeyboardMarkup(kb))
+        text = (
+            "🔒 <b>Доступ ограничен</b>\n\n"
+            "Чтобы начать игру и получить доступ ко всем функциям, "
+            "необходимо подписаться на наш новостной канал.\n\n"
+            "📌 Там вы найдёте:\n"
+            "• Новости и обновления бота\n"
+            "• Промокоды и бонусы\n"
+            "• Конкурсы с призами\n\n"
+            "👇 Нажмите кнопку ниже, подпишитесь, затем нажмите <b>«Проверить»</b>"
+        )
+        await update.message.reply_text(text, parse_mode="HTML", reply_markup=get_subscription_keyboard())
         return
 
     if context.args and context.args[0].startswith("ref"):
@@ -75,15 +91,29 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     data_manager.update_user_name(user_id, get_user_name(query.from_user))
 
+    # Обработка проверки подписки
+    if query.data == "check_subscription":
+        if await check_subscription(user_id, context):
+            await query.edit_message_text(
+                "✅ Подписка подтверждена! Добро пожаловать! 🎉\n\n"
+                "Нажмите /start чтобы начать игру.",
+                parse_mode="HTML"
+            )
+        else:
+            await query.answer("❌ Вы ещё не подписались на канал!", show_alert=True)
+        return
+
     if data_manager.user_data[user_id].get("banned", False):
         await query.edit_message_text("🚫 Вы забанены.")
         return
 
     if not await check_subscription(user_id, context):
-        await query.edit_message_text(
-            "❗ Подпишитесь на канал.",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("📢 Подписаться", url=f"https://t.me/{config.CHANNEL_USERNAME}")]])
+        text = (
+            "🔒 <b>Доступ ограничен</b>\n\n"
+            "Для продолжения игры необходимо подписаться на наш новостной канал.\n\n"
+            "👇 Подпишитесь и нажмите <b>«Проверить»</b>"
         )
+        await query.edit_message_text(text, parse_mode="HTML", reply_markup=get_subscription_keyboard())
         return
 
     if query.data.startswith("admin_"):
@@ -201,7 +231,12 @@ async def mm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🚫 Вы забанены.")
         return
     if not await check_subscription(user_id, context):
-        await update.message.reply_text("❗ Подпишитесь на канал.", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("📢 Подписаться", url=f"https://t.me/{config.CHANNEL_USERNAME}")]]))
+        text = (
+            "🔒 <b>Доступ ограничен</b>\n\n"
+            "Для просмотра профиля необходимо подписаться на наш новостной канал.\n\n"
+            "👇 Подпишитесь и нажмите <b>«Проверить»</b>"
+        )
+        await update.message.reply_text(text, parse_mode="HTML", reply_markup=get_subscription_keyboard())
         return
     apply_league_tax(user_id)
     await update.message.reply_text(get_profile_text(user_id), parse_mode="HTML")
