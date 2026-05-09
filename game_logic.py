@@ -2,7 +2,24 @@
 import time
 import config
 import data_manager
-from utils import get_league, is_premium_active, format_number
+from utils import get_league, is_premium_active, format_number, get_econ
+
+def apply_league_tax(user_id):
+    """📊 Ежедневный налог по лиге (влияет: tax_rates, заставляет тратить монеты)"""
+    ud = data_manager.user_data[user_id]
+    now = int(time.time())
+    if now - ud.get("last_tax", 0) < 86400:
+        return 0
+    
+    rates = get_econ("tax_rates")
+    rate = rates.get(ud["league"], 0.0)
+    tax = int(ud["coins"] * rate)
+    
+    if tax > 0:
+        ud["coins"] = max(0, ud["coins"] - tax)
+        ud["last_tax"] = now
+        data_manager.save_data()
+    return tax
 
 def check_achievements(user_id):
     ud = data_manager.user_data[user_id]
@@ -25,28 +42,32 @@ def update_league(user_id):
     data_manager.user_data[user_id]["league"] = get_league(coins)
 
 def process_click(user_id):
+    """📊 Основной процесс клика (влияет: income.click_base, auto_cap_pct, inactive_decay_mult)"""
     ud = data_manager.user_data[user_id]
     now = time.time()
-    auto_income = 0
-    last_click = ud.get("last_click", now)
-    seconds_passed = now - last_click
-    auto_clicker_rate = ud["auto_clicker"]
-    if is_premium_active(ud):
-        auto_clicker_rate *= 2
-    
-    if seconds_passed >= 1 and auto_clicker_rate > 0:
-        minutes_passed = seconds_passed / 60
-        auto_income = auto_clicker_rate * minutes_passed
-        ud["coins"] += auto_income
+
+    # 1. Доход за клик
+    base_click = get_econ("income.click_base")
+    click_power = ud["click_power"]
+    premium_mult = 1.5 if is_premium_active(ud) else 1.0
+    coins_earned = round((base_click + click_power) * premium_mult, 2)
+
+    # 2. Автодоход с ограничениями
+    auto_income = 0.0
+    seconds_passed = now - ud.get("last_click", now)
+    if seconds_passed >= 1 and ud["auto_clicker"] > 0:
+        max_auto = ud["click_power"] * get_econ("income.auto_cap_pct")
+        auto_rate = min(ud["auto_clicker"], max_auto)
         
-    coins_earned = ud["click_power"]
-    if is_premium_active(ud):
-        coins_earned *= 1.5
-        
+        if seconds_passed > 172800:
+            auto_rate *= get_econ("income.inactive_decay_mult")
+            
+        auto_income = round(auto_rate * (seconds_passed / 60), 2)
+
+    ud["coins"] += coins_earned + auto_income
     ud["clicks"] += 1
-    ud["coins"] += coins_earned
     ud["last_click"] = now
-    
+
     update_league(user_id)
     data_manager.save_data()
     
@@ -132,7 +153,10 @@ def process_daily_bonus(user_id):
         hours = int((86400 - (now - ud["last_daily"])) / 3600) + 1
         return {"success": False, "hours_left": hours}
     
-    bonus = config.DAILY_BONUS_PREMIUM if is_premium_active(ud) else config.DAILY_BONUS_BASE
+    bonus = int(get_econ("income.daily_base"))
+    if is_premium_active(ud):
+        bonus = int(bonus * 1.5)
+        
     ud["coins"] += bonus
     ud["last_daily"] = now
     update_league(user_id)
