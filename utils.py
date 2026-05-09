@@ -92,12 +92,21 @@ def is_premium_active(user_data):
     return time.time() < user_data["premium_until"]
 
 async def check_subscription(user_id, context):
-    """Проверяет подписку пользователя на канал"""
+    """Проверяет подписку пользователя на канал. Возвращает True если подписан или проверка отключена."""
+    # Если канал не настроен — пропускаем проверку
+    if not config.CHANNEL_USERNAME or config.CHANNEL_USERNAME == "YOUR_CHANNEL_USERNAME":
+        return True
+
     try:
         member = await context.bot.get_chat_member(chat_id=f"@{config.CHANNEL_USERNAME}", user_id=user_id)
+        # Статусы подписчика: member, administrator, creator, restricted
+        # Статусы НЕ подписчика: left, kicked
         if member.status in ['left', 'kicked']:
             return False
         return True
     except Exception as e:
-        print(f"Ошибка проверки подписки: {e}")
-        return True
+        # При ошибке API (бот не админ канала, канал не найден и т.д.) — 
+        # логируем и БЛОКИРУЕМ доступ для безопасности
+        print(f"🚫 Ошибка проверки подписки для user_id={user_id}: {e}")
+        # Если бот не админ канала — проверка не работает, блокируем
+        return False
