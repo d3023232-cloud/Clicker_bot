@@ -73,17 +73,28 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     apply_league_tax(user_id)
 
     name = user.first_name or "Игрок"
+
+    # Элегантное мотивирующее приветствие
     text = (
-        "╔═══════════════════╗\n"
-        " 🎮 CLICKER BOT 🎮\n"
-        "╚═══════════════════╝\n\n"
-        f"👋 Привет, {name}!\n\n"
-        "✨ Твой прогресс начинается здесь:\n"
-        " 🖱 Кликай → 🔧 Улучшай → 🏆 Будь первым\n\n"
-        "🎁 Ежедневный бонус | 🎰 Мини-игры | 💎 Донат\n\n"
-        "➡️ Жми «🖱 Клик!» и начни путь к славе! 👇"
+        f"<b>Приветствую, {name}.</b>\n\n"
+
+        "Добро пожаловать в мир, где каждый клик приближает к цели.\n"
+        "Здесь терпение вознаграждается, а упорство — уважением.\n\n"
+
+        "<i>— Начни с малого. Достигни большего.</i>\n\n"
+
+        "<b>Что тебя ждёт:</b>\n"
+        "  ◦ Простая механика с глубоким прогрессом\n"
+        "  ◦ Мини-игры для разнообразия\n"
+        "  ◦ Система достижений и званий\n"
+        "  ◦ Ежедневные бонусы\n\n"
+
+        "<i>Каждый топ начинал с нуля.</i>\n\n"
+
+        "👇 <b>Твой путь начинается здесь</b>"
     )
-    await update.message.reply_text(text, reply_markup=get_main_menu())
+
+    await update.message.reply_text(text, parse_mode="HTML", reply_markup=get_main_menu())
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
