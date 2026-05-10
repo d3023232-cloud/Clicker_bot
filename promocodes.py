@@ -27,6 +27,13 @@ def create_promocode(name, coins=0, donate_coins=0, premium_days=0, uses_limit=1
     if name in promos:
         return {"success": False, "message": f"❌ Промокод '{name}' уже существует!"}
 
+    # Проверка: хотя бы одна награда должна быть > 0
+    if coins <= 0 and donate_coins <= 0 and premium_days <= 0:
+        return {"success": False, "message": "❌ Промокод должен давать хотя бы одну награду (монеты, донат или премиум)!"}
+
+    if uses_limit <= 0:
+        return {"success": False, "message": "❌ Лимит активаций должен быть больше 0!"}
+
     promos[name] = {
         "coins": coins,
         "donate_coins": donate_coins,
@@ -77,23 +84,27 @@ def use_promocode(name, user_id):
     promos = load_promocodes()
     promo = promos[name]
 
-    # Применяем награды
     import data_manager
     ud = data_manager.user_data[user_id]
 
+    rewards_text = []
+
     if promo["coins"] > 0:
         ud["coins"] += promo["coins"]
+        rewards_text.append(f"🪙 +{promo['coins']}")
     if promo["donate_coins"] > 0:
         ud["donate_coins"] += promo["donate_coins"]
+        rewards_text.append(f"💎 +{promo['donate_coins']}")
     if promo["premium_days"] > 0:
         ud["premium"] = True
         if promo["premium_days"] == 0:
-            ud["premium_until"] = 0  # Навсегда
+            ud["premium_until"] = 0
         else:
             current = ud.get("premium_until", 0)
             if current < time.time():
                 current = time.time()
             ud["premium_until"] = current + (promo["premium_days"] * 86400)
+        rewards_text.append(f"👑 +{promo['premium_days']}д")
 
     # Обновляем статус промокода
     promo["uses_left"] -= 1
@@ -109,7 +120,8 @@ def use_promocode(name, user_id):
         "coins": promo["coins"],
         "donate_coins": promo["donate_coins"],
         "premium_days": promo["premium_days"],
-        "uses_left": promo["uses_left"]
+        "uses_left": promo["uses_left"],
+        "rewards_text": " | ".join(rewards_text) if rewards_text else "Нет наград"
     }
 
 def list_promocodes():
@@ -138,7 +150,6 @@ def list_promocodes():
     if active_count == 0:
         text += "Нет активных промокодов.\n\n"
 
-    # Использованные
     text += "<b>История использования:</b>\n"
     for name, promo in promos.items():
         if promo["used_by"]:

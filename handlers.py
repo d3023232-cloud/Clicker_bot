@@ -1,4 +1,4 @@
-"""Основные обработчики бота — оригинал + новые функции ТЗ"""
+"""Основные обработчики бота — рабочая версия"""
 import time
 import random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice
@@ -18,11 +18,10 @@ from admin import (
 )
 
 # ============================================================================
-# 🎨 КЛАВИАТУРЫ (новые + совместимость со старыми)
+# 🎨 КЛАВИАТУРЫ
 # ============================================================================
 
 def get_main_menu():
-    """Главное меню по ТЗ"""
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("👤 Профиль", callback_data="profile"), InlineKeyboardButton("🏆 Топ", callback_data="top")],
         [InlineKeyboardButton("🛒 Магазин", callback_data="shop"), InlineKeyboardButton("💎 Донат", callback_data="donat")],
@@ -130,7 +129,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, parse_mode="HTML", reply_markup=get_main_menu())
 
 # ============================================================================
-# 🔘 ОБРАБОТЧИК КНОПОК — ВСЕ callback'и (старые + новые)
+# 🔘 ОБРАБОТЧИК КНОПОК
 # ============================================================================
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -174,7 +173,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("🎮 Главное меню:", reply_markup=get_main_menu())
         return
 
-    # === КЛИК (оригинал) ===
+    # === КЛИК ===
     if query.data == "click":
         res = process_click(user_id)
         ach = ""
@@ -189,118 +188,150 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"⚡ Сила: {res['click_power']}{ach}",
             reply_markup=get_main_menu()
         )
+        return  # ← ВАЖНО: return чтобы не продолжать elif
 
-    # === ПРОФИЛЬ (новое) ===
-    elif query.data == "profile":
+    # === ПРОФИЛЬ ===
+    if query.data == "profile":
         await show_profile(query, user_id)
-    elif query.data == "back_to_profile":
+        return
+    if query.data == "back_to_profile":
         await show_profile(query, user_id)
+        return
 
-    # === ТОП (новое) ===
-    elif query.data == "top":
+    # === ТОП ===
+    if query.data == "top":
         await show_top(query, user_id)
-    elif query.data == "back_to_top":
+        return
+    if query.data == "back_to_top":
         await show_top(query, user_id)
+        return
 
-    # === МАГАЗИН (новое + совместимость) ===
-    elif query.data == "shop":
+    # === МАГАЗИН ===
+    if query.data == "shop":
         await query.edit_message_text("🛒 Магазин:", reply_markup=get_shop_submenu())
-    elif query.data == "back_to_shop":
+        return
+    if query.data == "back_to_shop":
         await query.edit_message_text("🛒 Магазин:", reply_markup=get_shop_submenu())
-    elif query.data == "shop_upgrades":
+        return
+    if query.data == "shop_upgrades":
         await query.edit_message_text("🔧 Улучшения:", reply_markup=InlineKeyboardMarkup(get_shop_upgrades_keyboard(user_id)))
-    elif query.data == "shop_titles":
+        return
+    if query.data == "shop_titles":
         await query.edit_message_text("🏅 Звания:", reply_markup=InlineKeyboardMarkup(get_shop_titles_keyboard(user_id)))
+        return
 
-    # === ДОНАТ (новое + совместимость) ===
-    elif query.data == "donat":
+    # === ДОНАТ ===
+    if query.data == "donat":
         await query.edit_message_text("💎 Донат-магазин:", reply_markup=get_donat_submenu())
-    elif query.data == "donat_shop":
+        return
+    if query.data == "donat_shop":
         await query.edit_message_text("💎 Donat-магазин (⭐):", reply_markup=InlineKeyboardMarkup(get_donat_shop_keyboard()))
-    elif query.data == "back_to_donat":
+        return
+    if query.data == "back_to_donat":
         await query.edit_message_text("💎 Донат-магазин:", reply_markup=get_donat_submenu())
-    elif query.data == "donat_premium":
+        return
+    if query.data == "donat_premium":
         await show_premium_info(query, user_id)
-    elif query.data == "donat_coins":
+        return
+    if query.data == "donat_coins":
         await show_donat_coins(query, user_id)
-    elif query.data == "donat_clicks":
+        return
+    if query.data == "donat_clicks":
         await show_donat_clicks(query, user_id)
+        return
 
-    # === МИНИ-ИГРЫ (новое + совместимость) ===
-    elif query.data == "minigames":
+    # === МИНИ-ИГРЫ ===
+    if query.data == "minigames":
         await show_minigames(query, user_id)
-    elif query.data == "back_to_minigames":
+        return
+    if query.data == "back_to_minigames":
         await show_minigames(query, user_id)
+        return
 
-    # === БОНУС (новое — рандом 10-10000) ===
-    elif query.data == "daily":
+    # === БОНУС ===
+    if query.data == "daily":
         await process_daily(query, user_id)
+        return
 
-    # === РЕФЕРАЛКА (оригинал + новое) ===
-    elif query.data == "referral":
+    # === РЕФЕРАЛКА ===
+    if query.data == "referral":
         await show_referral(query, user_id)
-    elif query.data == "back_to_referral":
+        return
+    if query.data == "back_to_referral":
         await show_referral(query, user_id)
+        return
 
-    # === ДОСТИЖЕНИЯ (оригинал + новое) ===
-    elif query.data == "achievements":
+    # === ДОСТИЖЕНИЯ ===
+    if query.data == "achievements":
         await show_achievements(query, user_id)
+        return
 
     # === ПРОФИЛЬ (старый callback) ===
-    elif query.data == "my_profile":
+    if query.data == "my_profile":
         await show_profile(query, user_id)
+        return
 
     # === ПРОМОКОД ===
-    elif query.data == "promocode":
+    if query.data == "promocode":
         context.user_data["promo_state"] = "input"
         await query.edit_message_text(
             "🎟 Введите промокод:\n\n(или нажмите Назад)",
             reply_markup=get_back_button("profile")
         )
+        return
 
-    # === ПОКУПКИ УЛУЧШЕНИЙ (оригинал) ===
-    elif query.data.startswith("buy_upg_"):
+    # === ПОКУПКИ УЛУЧШЕНИЙ ===
+    if query.data.startswith("buy_upg_"):
         res = buy_upgrade(user_id, query.data[8:])
         if res.get("new_achievement"):
             await query.answer("🎉 Робо-помощник!", show_alert=True)
         await query.edit_message_text(res["message"], reply_markup=get_shop_submenu())
+        return
 
-    # === ПОКУПКИ ЗВАНИЙ (оригинал) ===
-    elif query.data.startswith("buy_title_"):
+    # === ПОКУПКИ ЗВАНИЙ ===
+    if query.data.startswith("buy_title_"):
         res = buy_title(user_id, query.data[11:])
         await query.edit_message_text(res["message"], reply_markup=get_shop_submenu())
+        return
 
-    # === ПОКУПКИ DONAT STARS (оригинал) ===
-    elif query.data.startswith("buy_stars_"):
+    # === ПОКУПКИ DONAT STARS ===
+    if query.data.startswith("buy_stars_"):
         await process_donat_buy(query, context, user_id, query.data[10:])
+        return
 
     # === ПОКУПКИ ПРЕМИУМА ===
-    elif query.data == "buy_premium_stars":
+    if query.data == "buy_premium_stars":
         await buy_premium_stars(query, context, user_id)
-    elif query.data == "buy_premium_donate":
+        return
+    if query.data == "buy_premium_donate":
         await buy_premium_donate(query, user_id)
+        return
 
     # === ПОКУПКИ МОНЕТ ===
-    elif query.data.startswith("buy_coins_"):
+    if query.data.startswith("buy_coins_"):
         await process_coins_buy(query, user_id, query.data)
+        return
 
     # === ПОКУПКИ КЛИКОВ ===
-    elif query.data.startswith("buy_click_"):
+    if query.data.startswith("buy_click_"):
         await process_click_buy(query, user_id, query.data)
+        return
 
     # === ПОДТВЕРЖДЕНИЕ УЛУЧШЕНИЯ ===
-    elif query.data.startswith("confirm_upg_"):
+    if query.data.startswith("confirm_upg_"):
         res = buy_upgrade(user_id, query.data[12:])
         await query.edit_message_text(res["message"], reply_markup=get_shop_submenu())
+        return
 
-    # === ИГРЫ (оригинал) ===
-    elif query.data == "game_crash_start":
+    # === ИГРЫ ===
+    if query.data == "game_crash_start":
         res = start_crash_game(user_id)
         if not res["success"]:
             return await query.answer(res["message"], show_alert=True)
         context.user_data.update({"game_state": "crash", "game_user_id": user_id})
         await query.edit_message_text("💥 Краш\n📉 Ставка 20–1 000 000\n\n_Введите число в чат_", parse_mode="HTML")
-    elif query.data.startswith("crash_multiplier_"):
+        return
+    if query.data.startswith("crash_multiplier_"):
         mult = float(query.data.split("_")[2])
         bet = context.user_data.get("crash_bet")
         if not bet or context.user_data.get("game_user_id") != user_id:
@@ -310,13 +341,15 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for key in list(context.user_data.keys()):
             if key.startswith(("game_", "crash_", "roulette_", "duel_")):
                 context.user_data.pop(key, None)
-    elif query.data == "game_roulette_start":
+        return
+    if query.data == "game_roulette_start":
         res = start_roulette_game(user_id)
         if not res["success"]:
             return await query.answer(res["message"], show_alert=True)
         context.user_data.update({"game_state": "roulette", "game_user_id": user_id})
         await query.edit_message_text("🎰 Рулетка\n🔴/⚫ ×1.9 | 🟢 ×9.0\n\n_Введите ставку_", parse_mode="HTML")
-    elif query.data.startswith("roulette_color_"):
+        return
+    if query.data.startswith("roulette_color_"):
         color = query.data.split("_")[2]
         bet = context.user_data.get("roulette_bet")
         if not bet or context.user_data.get("game_user_id") != user_id:
@@ -326,16 +359,19 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for key in list(context.user_data.keys()):
             if key.startswith(("game_", "crash_", "roulette_", "duel_")):
                 context.user_data.pop(key, None)
-    elif query.data == "game_duel_start":
+        return
+    if query.data == "game_duel_start":
         res = start_duel_game(user_id)
         if not res["success"]:
             return await query.answer(res["message"], show_alert=True)
         context.user_data.update({"game_state": "duel", "game_user_id": user_id})
         await query.edit_message_text("⚔️ Дуэль (48% победа)\n\n_Введите ставку_", parse_mode="HTML")
+        return
 
     # === НАЗАД (универсальные) ===
-    elif query.data == "noop":
+    if query.data == "noop":
         await query.edit_message_text("🎮 Главное меню:", reply_markup=get_main_menu())
+        return
 
 # ============================================================================
 # 👤 ПРОФИЛЬ
@@ -488,7 +524,6 @@ async def show_donat_clicks(query, user_id):
 # ============================================================================
 
 async def process_donat_buy(query, context, user_id, item_id):
-    """Покупка через Telegram Stars (оригинал)"""
     item = config.DONAT_SHOP.get(item_id)
     if not item:
         return await query.edit_message_text("❌ Товар не найден.", reply_markup=get_main_menu())
@@ -500,7 +535,6 @@ async def process_donat_buy(query, context, user_id, item_id):
         await query.edit_message_text(f"❌ Ошибка оплаты: {e}", reply_markup=get_main_menu())
 
 async def buy_premium_stars(query, context, user_id):
-    """Покупка премиума за Stars"""
     try:
         await context.bot.send_invoice(chat_id=user_id, title="Премиум-статус 👑", 
             description="x2 клик, x2 авто, x3 бонус, VIP-значок на 30 дней",
@@ -510,7 +544,6 @@ async def buy_premium_stars(query, context, user_id):
         await query.edit_message_text(f"❌ Ошибка: {e}", reply_markup=get_donat_submenu())
 
 async def buy_premium_donate(query, user_id):
-    """Покупка премиума за донат-коины"""
     ud = data_manager.user_data[user_id]
     if ud["donate_coins"] < 150:
         await query.answer("❌ Недостаточно донат-коинов!", show_alert=True)
@@ -525,7 +558,6 @@ async def buy_premium_donate(query, user_id):
     await query.edit_message_text("👑 <b>Премиум активирован на 30 дней!</b>", reply_markup=get_donat_submenu())
 
 async def process_coins_buy(query, user_id, callback_data):
-    """Покупка монет"""
     ud = data_manager.user_data[user_id]
     prices = {
         "buy_coins_100k_stars": (25, "stars", 100000),
@@ -548,7 +580,6 @@ async def process_coins_buy(query, user_id, callback_data):
     await query.edit_message_text(f"✅ +{format_number(amount)} монет!", reply_markup=get_donat_submenu())
 
 async def process_click_buy(query, user_id, callback_data):
-    """Покупка силы клика"""
     ud = data_manager.user_data[user_id]
     prices = {
         "buy_click_5_stars": (40, "stars", 5),
@@ -581,7 +612,6 @@ async def process_daily(query, user_id):
         await query.edit_message_text(f"🎁 Бонус доступен через {hours_left} ч.", reply_markup=get_main_menu())
         return
     bonus = random.randint(10, 10000)
-    # VIP x3
     if is_premium_active(ud):
         bonus *= 3
     ud["coins"] += bonus
@@ -619,7 +649,7 @@ async def process_promocode(update: Update, context: ContextTypes.DEFAULT_TYPE, 
     context.user_data.pop("promo_state", None)
 
 # ============================================================================
-# 🛠 АДМИН-ПАНЕЛЬ (полная — старая + новая)
+# 🛠 АДМИН-ПАНЕЛЬ (полная)
 # ============================================================================
 
 async def _admin_callback(query, context, user_id):
@@ -638,30 +668,27 @@ async def _admin_callback(query, context, user_id):
         context.user_data.update({"admin_state": "search_input", "admin_action": None})
         return await query.edit_message_text("🔍 Введите @, имя или ID:", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Отмена", callback_data="admin_main")]]))
 
-    # === ПРОМОКОДЫ ===
+    # Промокоды
     if data == "admin_promo_menu":
         return await query.edit_message_text("🎟 Управление промокодами:", reply_markup=get_admin_promo_keyboard())
-
     if data == "admin_promo_create":
         context.user_data["admin_state"] = "promo_create_name"
         return await query.edit_message_text(
             "🎟 <b>Создание промокода</b>\n\nВведите название:",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Отмена", callback_data="admin_main")]])
         )
-
     if data == "admin_promo_delete":
         context.user_data["admin_state"] = "promo_delete"
         return await query.edit_message_text(
             "🗑 Введите название промокода для удаления:",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Отмена", callback_data="admin_main")]])
         )
-
     if data == "admin_promo_list":
         from promocodes import list_promocodes
         text = list_promocodes()
         return await query.edit_message_text(text, reply_markup=get_admin_promo_keyboard())
 
-    # === СТАНДАРТНЫЕ ДЕЙСТВИЯ ===
+    # Стандартные действия
     actions = ["add_coins", "remove_coins", "add_donate", "remove_donate", "add_premium", "remove_premium", "ban", "unban", "reset"]
     if any(data.startswith(f"admin_action_{a}") for a in actions):
         act = data.replace("admin_action_", "")

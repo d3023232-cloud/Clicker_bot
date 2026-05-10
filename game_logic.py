@@ -1,4 +1,4 @@
-"""Game logic with VIP effects"""
+"""Game logic with VIP effects — без циклических импортов"""
 import time
 import random
 from utils import get_league, get_econ, is_premium_active
@@ -6,6 +6,7 @@ import config
 import data_manager
 
 def process_click(user_id):
+    """Обработка клика с VIP-эффектами"""
     ud = data_manager.user_data[user_id]
     now = time.time()
 
@@ -54,7 +55,7 @@ def get_profile_text(user_id):
     name = ud.get("name", f"ID{user_id}")
 
     text = (
-        f"👤 <b>Профиль{name}</b>\n"
+        f"👤 <b>Профиль{vip}</b>\n"
         f"├ ID: <code>{user_id}</code>\n"
         f"├ Ник: {name}\n"
         f"├ 🪙 Баланс: {int(ud['coins']):,}\n"
@@ -86,7 +87,7 @@ def process_daily_bonus(user_id):
         hours_left = int((86400 - (now - last)) / 3600)
         return {"success": False, "hours_left": hours_left}
 
-    # Рандомный бонус 10-10000 (по ТЗ)
+    # Рандомный бонус 10-10000
     base_bonus = random.randint(10, 10000)
 
     # VIP x3 бонус
@@ -109,55 +110,8 @@ def apply_league_tax(user_id):
         return tax_amount
     return 0
 
-def buy_upgrade(user_id, upgrade_id):
-    from shop import calc_upgrade_cost, UPGRADES
-    ud = data_manager.user_data[user_id]
-    current_level = ud.get(f"upgrade_{upgrade_id}", 0)
-    cost = calc_upgrade_cost(upgrade_id, current_level)
-
-    if ud["coins"] < cost:
-        return {"success": False, "message": f"❌ Недостаточно монет! Нужно: {cost:,}"}
-
-    ud["coins"] -= cost
-    new_level = current_level + 1
-    ud[f"upgrade_{upgrade_id}"] = new_level
-    ud["click_power"] = UPGRADES[upgrade_id]["effect"](ud["click_power"], new_level)
-
-    new_achievement = False
-    if upgrade_id == "auto_clicker" and new_level == 1:
-        ud["achievements"].add("buy_upgrade")
-        new_achievement = True
-
-    data_manager.save_data()
-
-    return {
-        "success": True,
-        "message": f"✅ Куплено! Уровень {new_level}. Сила клика: {ud['click_power']}",
-        "new_achievement": new_achievement
-    }
-
-def buy_title(user_id, title_id):
-    from shop import TITLES
-    ud = data_manager.user_data[user_id]
-    title = TITLES.get(title_id)
-
-    if not title:
-        return {"success": False, "message": "❌ Звание не найдено!"}
-    if ud["coins"] < title["cost"]:
-        return {"success": False, "message": f"❌ Нужно {title['cost']:,} монет!"}
-    if ud["clicks"] < title["min_clicks"]:
-        return {"success": False, "message": f"❌ Нужно {title['min_clicks']:,} кликов!"}
-
-    ud["coins"] -= title["cost"]
-    ud["title"] = title["name"]
-    data_manager.save_data()
-
-    return {"success": True, "message": f"🏅 Звание получено: {title['name']}!"}
-
-
 def update_league(user_id):
-    """Обновляет лигу игрока на основе монет"""
-    from utils import get_league
+    """Обновляет лигу игрока"""
     ud = data_manager.user_data[user_id]
     new_league = get_league(ud["coins"])
     if new_league != ud["league"]:

@@ -1,4 +1,4 @@
-"""Admin panel with promocode management"""
+"""Admin panel — полная версия со всеми кнопками"""
 import time
 import config
 import data_manager
@@ -18,10 +18,20 @@ def get_admin_panel_text():
     )
 
 def get_admin_main_keyboard():
+    """Главная админ-клавиатура со ВСЕМИ действиями"""
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📊 Статистика", callback_data="admin_stats"),
          InlineKeyboardButton("💰 Экономика", callback_data="admin_econ")],
+        [InlineKeyboardButton("💰 +Монеты", callback_data="admin_action_add_coins"),
+         InlineKeyboardButton("🔻 -Монеты", callback_data="admin_action_remove_coins")],
+        [InlineKeyboardButton("💎 +Донат", callback_data="admin_action_add_donate"),
+         InlineKeyboardButton("💸 -Донат", callback_data="admin_action_remove_donate")],
+        [InlineKeyboardButton("⭐ +Премиум", callback_data="admin_action_add_premium"),
+         InlineKeyboardButton("❌ -Премиум", callback_data="admin_action_remove_premium")],
+        [InlineKeyboardButton("🚫 Бан", callback_data="admin_action_ban"),
+         InlineKeyboardButton("✅ Разбан", callback_data="admin_action_unban")],
+        [InlineKeyboardButton("🔄 Сброс юзера", callback_data="admin_action_reset")],
         [InlineKeyboardButton("🔍 Найти игрока", callback_data="admin_search_prompt"),
          InlineKeyboardButton("📢 Рассылка", callback_data="admin_broadcast")],
         [InlineKeyboardButton("🎟 Промокоды", callback_data="admin_promo_menu")],
