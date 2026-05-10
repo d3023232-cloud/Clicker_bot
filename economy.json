@@ -1,6 +1,6 @@
 {
   "income": {
-    "click_base": 3.0,
+    "click_base": 2.0,
     "daily_base": 50,
     "auto_cap_pct": 0.6,
     "inactive_decay_mult": 0.5
