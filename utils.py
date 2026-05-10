@@ -1,4 +1,4 @@
-"""Helper functions"""
+"""Helper functions with BotHost Shared Storage"""
 import time
 import random
 import json
@@ -6,8 +6,12 @@ import os
 import config
 from telegram import Bot
 
-# 📊 ЭКОНОМИКА: Загрузка и управление конфигами экономики
-ECONOMY_FILE = "economy.json"
+# ── BotHost Shared Storage ──────────────────────────────────────────
+SHARED_DIR = os.getenv("SHARED_DIR", "/app/shared")
+os.makedirs(SHARED_DIR, exist_ok=True)
+
+# 📊 ЭКОНОМИКА
+ECONOMY_FILE = os.path.join(SHARED_DIR, "economy.json")
 _economy_cache = None
 
 def load_economy():
@@ -19,15 +23,38 @@ def load_economy():
         if os.path.exists(ECONOMY_FILE):
             with open(ECONOMY_FILE, "r", encoding="utf-8") as f:
                 _economy_cache = json.load(f)
+                print(f"📊 Экономика загружена: {ECONOMY_FILE}")
         else:
             _economy_cache = {
-                "income": {"click_base": 1.0, "daily_base": 20, "auto_cap_pct": 0.4, "inactive_decay_mult": 0.3},
-                "pricing": {"cost_multiplier": 2.8, "diminishing_effect": True},
-                "tax_rates": {"🥉 Бронза": 0.0, "🥈 Серебро": 0.005, "🥇 Золото": 0.01, "💎 Алмаз": 0.015},
-                "games": {"max_bet_pct": 0.1, "house_edge": 0.02, "min_bet": 20},
-                "limits": {"click_base": [0.1, 5.0], "cost_multiplier": [1.5, 5.0], "max_bet_pct": [0.01, 0.5]}
+                "income": {
+                    "click_base": 1.0,
+                    "daily_base": 20,
+                    "auto_cap_pct": 0.4,
+                    "inactive_decay_mult": 0.3
+                },
+                "pricing": {
+                    "cost_multiplier": 2.8,
+                    "diminishing_effect": True
+                },
+                "tax_rates": {
+                    "🥉 Бронза": 0.0,
+                    "🥈 Серебро": 0.005,
+                    "🥇 Золото": 0.01,
+                    "💎 Алмаз": 0.015
+                },
+                "games": {
+                    "max_bet_pct": 0.1,
+                    "house_edge": 0.02,
+                    "min_bet": 20
+                },
+                "limits": {
+                    "click_base": [0.1, 5.0],
+                    "cost_multiplier": [1.5, 5.0],
+                    "max_bet_pct": [0.01, 0.5]
+                }
             }
             save_economy(_economy_cache)
+            print(f"📊 Создан дефолт economy.json: {ECONOMY_FILE}")
     except Exception as e:
         print(f"⚠️ Ошибка загрузки экономики: {e}")
     return _economy_cache
@@ -50,10 +77,14 @@ def save_economy(data=None):
     global _economy_cache
     if data:
         _economy_cache = data
-    with open(ECONOMY_FILE, "w", encoding="utf-8") as f:
-        json.dump(_economy_cache, f, indent=2, ensure_ascii=False)
+    try:
+        with open(ECONOMY_FILE, "w", encoding="utf-8") as f:
+            json.dump(_economy_cache, f, indent=2, ensure_ascii=False)
+        print(f"💾 Экономика сохранена: {ECONOMY_FILE}")
+    except Exception as e:
+        print(f"❌ Ошибка сохранения экономики: {e}")
 
-# --- Оригинальные функции ---
+# ── Оригинальные функции ────────────────────────────────────────────
 def format_number(n: int) -> str:
     return f"{int(n):,}".replace(",", " ")
 
@@ -93,20 +124,14 @@ def is_premium_active(user_data):
 
 async def check_subscription(user_id, context):
     """Проверяет подписку пользователя на канал. Возвращает True если подписан или проверка отключена."""
-    # Если канал не настроен — пропускаем проверку
     if not config.CHANNEL_USERNAME or config.CHANNEL_USERNAME == "YOUR_CHANNEL_USERNAME":
         return True
 
     try:
         member = await context.bot.get_chat_member(chat_id=f"@{config.CHANNEL_USERNAME}", user_id=user_id)
-        # Статусы подписчика: member, administrator, creator, restricted
-        # Статусы НЕ подписчика: left, kicked
         if member.status in ['left', 'kicked']:
             return False
         return True
     except Exception as e:
-        # При ошибке API (бот не админ канала, канал не найден и т.д.) — 
-        # логируем и БЛОКИРУЕМ доступ для безопасности
         print(f"🚫 Ошибка проверки подписки для user_id={user_id}: {e}")
-        # Если бот не админ канала — проверка не работает, блокируем
         return False
