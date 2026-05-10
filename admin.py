@@ -11,7 +11,7 @@ def get_admin_panel_text():
     total_players = len(data_manager.user_data)
     total_coins = sum(d["coins"] for d in data_manager.user_data.values())
     return (
-        "🛠 <b>Админ-панель</b>\n\n"
+        "🛠 Админ-панель\n\n"
         f"👥 Игроков: {total_players}\n"
         f"🪙 Всего монет: {format_number(int(total_coins))}\n"
         f"💎 Всего донатов: {sum(d['donate_coins'] for d in data_manager.user_data.values())}"
@@ -69,7 +69,7 @@ def get_stats():
         return "📊 Нет данных"
     top = max(((uid, d["coins"]) for uid, d in ud.items()), key=lambda x: x[1], default=(None, 0))
     return (
-        "📊 <b>Статистика</b>\n\n"
+        "📊 Статистика\n\n"
         f"👥 Игроков: {len(ud)}\n"
         f"🪙 Всего монет: {format_number(int(sum(d['coins'] for d in ud.values())))}\n"
         f"💎 Всего донатов: {sum(d['donate_coins'] for d in ud.values())}\n"
@@ -79,7 +79,7 @@ def get_stats():
 def get_econ_stats():
     from utils import get_econ
     return (
-        "💰 <b>Экономика</b>\n\n"
+        "💰 Экономика\n\n"
         f"Базовый клик: {get_econ('income.click_base')}\n"
         f"Множитель цен: {get_econ('pricing.cost_multiplier')}\n"
         f"Налоги: {get_econ('tax_rates')}"

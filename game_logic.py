@@ -69,7 +69,7 @@ def get_profile_text(user_id):
     name = ud.get("name", f"ID{user_id}")
 
     text = (
-        f"👤 <b>Профиль{vip}</b>\n"
+        f"👤 Профиль{vip}\n"
         f"├ ID: <code>{user_id}</code>\n"
         f"├ Ник: {name}\n"
         f"├ 🪙 Баланс: {int(ud['coins']):,}\n"
@@ -85,7 +85,7 @@ def get_profile_text(user_id):
 
 def get_top_text():
     sorted_users = sorted(data_manager.user_data.items(), key=lambda x: x[1]["coins"], reverse=True)
-    text = "🏆 <b>Топ игроков</b>\n\n"
+    text = "🏆 Топ игроков\n\n"
     for i, (uid, ud) in enumerate(sorted_users[:10], 1):
         vip = " 👑" if is_premium_active(ud) else ""
         name = ud.get("name", f"ID{uid}")

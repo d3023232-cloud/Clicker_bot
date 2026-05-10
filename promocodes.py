@@ -128,9 +128,9 @@ def list_promocodes():
     promos = load_promocodes()
 
     if not promos:
-        return "🎟 <b>Промокоды</b>\n\nПока нет ни одного промокода."
+        return "🎟 Промокоды\n\nПока нет ни одного промокода."
 
-    text = "🎟 <b>Активные промокоды:</b>\n\n"
+    text = "🎟 Активные промокоды:\n\n"
     active_count = 0
 
     for name, promo in promos.items():
@@ -150,7 +150,7 @@ def list_promocodes():
     if active_count == 0:
         text += "Нет активных промокодов.\n\n"
 
-    text += "<b>История использования:</b>\n"
+    text += "История использования:\n"
     for name, promo in promos.items():
         if promo["used_by"]:
             text += f"<code>{name}</code>: {len(promo['used_by'])} акт.\n"

@@ -83,14 +83,14 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not await check_subscription(user_id, context):
         text = (
-            "🔒 <b>Доступ ограничен</b>\n\n"
+            "🔒 Доступ ограничен\n\n"
             "Чтобы начать игру и получить доступ ко всем функциям, "
             "необходимо подписаться на наш новостной канал.\n\n"
             "📌 Там вы найдёте:\n"
             "• Новости и обновления бота\n"
             "• Промокоды и бонусы\n"
             "• Конкурсы с призами\n\n"
-            "👇 Нажмите кнопку ниже, подпишитесь, затем нажмите <b>«Проверить»</b>"
+            "👇 Нажмите кнопку ниже, подпишитесь, затем нажмите «Проверить»"
         )
         await update.message.reply_text(text, parse_mode="HTML", reply_markup=get_subscription_keyboard())
         return
@@ -114,17 +114,17 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     name = user.first_name or "Игрок"
     text = (
-        f"<b>Приветствую, {name}.</b>\n\n"
+        f"Приветствую, {name}.\n\n"
         "Добро пожаловать в мир, где каждый клик приближает к цели.\n"
         "Здесь терпение вознаграждается, а упорство — уважением.\n\n"
         "<i>— Начните с малого. Достигните большего.</i>\n\n"
-        "<b>Что вас ждёт:</b>\n"
+        "Что вас ждёт:\n"
         "  ◦ Простая механика с глубоким прогрессом\n"
         "  ◦ Мини-игры для разнообразия\n"
         "  ◦ Система достижений и званий\n"
         "  ◦ Ежедневные бонусы\n\n"
         "<i>Каждый топ начинал с нуля.</i>\n\n"
-        "👇 <b>Ваш путь начинается здесь</b>"
+        "👇 Ваш путь начинается здесь"
     )
     await update.message.reply_text(text, parse_mode="HTML", reply_markup=get_main_menu())
 
@@ -156,9 +156,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not await check_subscription(user_id, context):
         text = (
-            "🔒 <b>Доступ ограничен</b>\n\n"
+            "🔒 Доступ ограничен\n\n"
             "Для продолжения необходимо подписаться на наш новостной канал.\n\n"
-            "👇 Подпишитесь и нажмите <b>«Проверить»</b>"
+            "👇 Подпишитесь и нажмите «Проверить»"
         )
         await query.edit_message_text(text, parse_mode="HTML", reply_markup=get_subscription_keyboard())
         return
@@ -381,7 +381,7 @@ async def show_profile(query, user_id):
     ud = data_manager.user_data[user_id]
     vip = " 👑" if is_premium_active(ud) else ""
     text = (
-        f"<b>👤 Профиль{vip}</b>\n\n"
+        f"👤 Профиль{vip}\n\n"
         f"🆔 ID: <code>{user_id}</code>\n"
         f"👤 Ник: {ud.get('name', 'Игрок')}\n"
         f"🪙 Баланс: {format_number(int(ud['coins']))}\n"
@@ -400,7 +400,7 @@ async def show_referral(query, user_id):
     count = len([u for u in data_manager.user_data.values() if u.get("referrer_id") == user_id])
     earned = data_manager.user_data[user_id]['donate_coins']
     text = (
-        "🤝 <b>Реферальная программа</b>\n\n"
+        "🤝 Реферальная программа\n\n"
         f"🔗 Ваша ссылка:\n<code>{link}</code>\n\n"
         f"👥 Приглашено друзей: {count}\n"
         f"💎 Получено донат-коинов: {earned}\n\n"
@@ -410,7 +410,7 @@ async def show_referral(query, user_id):
 
 async def show_achievements(query, user_id):
     ud = data_manager.user_data[user_id]
-    text = "🏅 <b>Достижения</b>\n\n"
+    text = "🏅 Достижения\n\n"
     for k, v in config.ACHIEVEMENTS.items():
         status = "✅" if k in ud['achievements'] else "❌"
         text += f"{status} {v['name']} — {v['desc']}\n"
@@ -423,7 +423,7 @@ async def show_achievements(query, user_id):
 
 async def show_top(query, user_id):
     sorted_users = sorted(data_manager.user_data.items(), key=lambda x: x[1]["coins"], reverse=True)
-    text = "🏆 <b>ТОП-10 игроков</b>\n\n"
+    text = "🏆 ТОП-10 игроков\n\n"
     for i, (uid, ud) in enumerate(sorted_users[:10], 1):
         vip = " 👑" if is_premium_active(ud) else ""
         name = ud.get('name', f'ID{uid}')
@@ -435,11 +435,11 @@ async def show_top(query, user_id):
             user_position = i
             break
     if user_position and user_position > 10:
-        text += f"\n📍 <b>Ваше место: {user_position}</b>"
+        text += f"\n📍 Ваше место: {user_position}"
     elif user_position and user_position <= 10:
-        text += "\n✨ <b>Вы в ТОП-10!</b>"
+        text += "\n✨ Вы в ТОП-10!"
     else:
-        text += "\n📍 <b>Вы ещё не в рейтинге</b>"
+        text += "\n📍 Вы ещё не в рейтинге"
     await query.edit_message_text(text, parse_mode="HTML", reply_markup=get_back_button("main"))
 
 # ============================================================================
@@ -449,7 +449,7 @@ async def show_top(query, user_id):
 async def show_minigames(query, user_id):
     ud = data_manager.user_data[user_id]
     text = (
-        "🎮 <b>Мини-игры</b>\n\n"
+        "🎮 Мини-игры\n\n"
         f"🪙 Ваш баланс: {format_number(int(ud['coins']))}\n"
         f"📉 Мин. ставка: {format_number(config.MIN_BET)}\n"
         f"📈 Макс. ставка: {format_number(config.MAX_BET)}\n\n"
@@ -464,14 +464,14 @@ async def show_minigames(query, user_id):
 async def show_premium_info(query, user_id):
     ud = data_manager.user_data[user_id]
     text = (
-        "💎 <b>Премиум-статус</b> 👑\n\n"
-        "<b>Что даёт премиум:</b>\n"
+        "💎 Премиум-статус 👑\n\n"
+        "Что даёт премиум:\n"
         "  ◦ x2 сила клика\n"
         "  ◦ x2 авто-доход\n"
         "  ◦ 72 часа авто-дохода бонусом\n"
         "  ◦ x3 ежедневный бонус\n"
         "  ◦ VIP-значок 👑 рядом с ником\n\n"
-        "<b>Стоимость (1 месяц):</b>\n"
+        "Стоимость (1 месяц):\n"
         "  • 100 ⭐ (Telegram Stars)\n"
         "  • Или 150 донат-коинов\n"
         "  • Или 100 ₽ (скоро)\n\n"
@@ -487,7 +487,7 @@ async def show_premium_info(query, user_id):
 async def show_donat_coins(query, user_id):
     ud = data_manager.user_data[user_id]
     text = (
-        "🪙 <b>Покупка монет</b>\n\n"
+        "🪙 Покупка монет\n\n"
         f"💰 Текущий баланс: {format_number(int(ud['coins']))}\n\n"
         "Выберите количество:"
     )
@@ -505,7 +505,7 @@ async def show_donat_coins(query, user_id):
 async def show_donat_clicks(query, user_id):
     ud = data_manager.user_data[user_id]
     text = (
-        "👆 <b>Покупка силы клика</b>\n\n"
+        "👆 Покупка силы клика\n\n"
         f"⚡ Текущая сила: {ud['click_power']}\n"
         f"💎 Донат-коины: {ud['donate_coins']}\n\n"
         "Выберите усиление:"
@@ -555,7 +555,7 @@ async def buy_premium_donate(query, user_id):
         current = time.time()
     ud["premium_until"] = current + (30 * 86400)
     data_manager.save_data()
-    await query.edit_message_text("👑 <b>Премиум активирован на 30 дней!</b>", reply_markup=get_donat_submenu())
+    await query.edit_message_text("👑 Премиум активирован на 30 дней!", reply_markup=get_donat_submenu())
 
 async def process_coins_buy(query, user_id, callback_data):
     ud = data_manager.user_data[user_id]
@@ -619,7 +619,7 @@ async def process_daily(query, user_id):
     data_manager.save_data()
     vip_text = " (x3 VIP)" if is_premium_active(ud) else ""
     await query.edit_message_text(
-        f"🍀 <b>Вы испытали сегодняшнюю удачу!</b>\n\n"
+        f"🍀 Вы испытали сегодняшнюю удачу!\n\n"
         f"🎁 Ваш бонус: {format_number(bonus)} монет{vip_text}!\n"
         f"🪙 Новый баланс: {format_number(int(ud['coins']))}\n\n"
         "Возвращайтесь завтра! 🎰",
@@ -637,7 +637,7 @@ async def process_promocode(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         await update.message.reply_text(f"❌ {result['message']}")
         return
     rewards = use_promocode(code, user_id)
-    text = "🎉 <b>Промокод активирован!</b>\n\n"
+    text = "🎉 Промокод активирован!\n\n"
     if rewards.get("coins"):
         text += f"🪙 +{format_number(rewards['coins'])} монет\n"
     if rewards.get("donate_coins"):
@@ -674,7 +674,7 @@ async def _admin_callback(query, context, user_id):
     if data == "admin_promo_create":
         context.user_data["admin_state"] = "promo_create_name"
         return await query.edit_message_text(
-            "🎟 <b>Создание промокода</b>\n\nВведите название:",
+            "🎟 Создание промокода\n\nВведите название:",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Отмена", callback_data="admin_main")]])
         )
     if data == "admin_promo_delete":
@@ -883,9 +883,9 @@ async def mm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     if not await check_subscription(user_id, context):
         text = (
-            "🔒 <b>Доступ ограничен</b>\n\n"
+            "🔒 Доступ ограничен\n\n"
             "Для просмотра профиля необходимо подписаться на наш новостной канал.\n\n"
-            "👇 Подпишитесь и нажмите <b>«Проверить»</b>"
+            "👇 Подпишитесь и нажмите «Проверить»"
         )
         await update.message.reply_text(text, parse_mode="HTML", reply_markup=get_subscription_keyboard())
         return
