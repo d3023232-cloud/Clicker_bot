@@ -1,7 +1,9 @@
-"""Data management with BotHost Shared Storage support"""
+"""Data management with auto-save"""
 import json
 import os
 import time
+import atexit
+import threading
 from collections import defaultdict
 import config
 
@@ -9,7 +11,7 @@ import config
 SHARED_DIR = os.getenv("SHARED_DIR", "/app/shared")
 DATA_PATH = os.path.join(SHARED_DIR, "clicker_data.json")
 
-# Пытаемся создать директорию, если не получается — используем текущую
+# Пытаемся создать директорию
 try:
     os.makedirs(SHARED_DIR, exist_ok=True)
     print(f"📁 Директория данных: {SHARED_DIR}")
@@ -18,6 +20,8 @@ except Exception as e:
     SHARED_DIR = os.getcwd()
     DATA_PATH = os.path.join(SHARED_DIR, "clicker_data.json")
     print(f"📁 Fallback директория: {SHARED_DIR}")
+
+print(f"📂 Путь к данным: {DATA_PATH}")
 
 user_data = defaultdict(lambda: {
     "clicks": 0, "coins": 0, "click_power": 1.0, "auto_clicker": 0.0,
@@ -28,8 +32,10 @@ user_data = defaultdict(lambda: {
 })
 
 user_names = {}
+_autosave_timer = None
 
 def save_data():
+    """Сохраняет данные и проверяет файл"""
     try:
         serializable = {}
         for uid, data in user_data.items():
@@ -43,22 +49,46 @@ def save_data():
                 "referrer_id": data["referrer_id"], "last_reminder": data["last_reminder"],
                 "reminders_enabled": data["reminders_enabled"], "banned": data.get("banned", False)
             }
-        with open(DATA_PATH, 'w', encoding='utf-8') as f:
+
+        # Записываем во временный файл, затем переименовываем (атомарно)
+        temp_path = DATA_PATH + ".tmp"
+        with open(temp_path, 'w', encoding='utf-8') as f:
             json.dump({"user_data": serializable, "user_names": user_names}, f, ensure_ascii=False, indent=2)
-        print(f"💾 Данные сохранены: {DATA_PATH} ({len(user_data)} игроков)")
-        return True
+
+        # Переименовываем (атомарная операция)
+        if os.path.exists(DATA_PATH):
+            os.replace(temp_path, DATA_PATH)
+        else:
+            os.rename(temp_path, DATA_PATH)
+
+        # Проверяем, что файл реально записался
+        if os.path.exists(DATA_PATH):
+            size = os.path.getsize(DATA_PATH)
+            print(f"💾 Данные сохранены: {DATA_PATH} ({len(user_data)} игроков, {size} bytes)")
+            return True
+        else:
+            print(f"❌ Файл не создан после записи!")
+            return False
+
     except Exception as e:
         print(f"❌ Ошибка сохранения: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def load_data():
+    """Загружает данные"""
     global user_data, user_names
+
     if not os.path.exists(DATA_PATH):
-        print(f"📁 Файл данных не найден. Создаём новый: {DATA_PATH}")
+        print(f"📁 Файл данных не найден: {DATA_PATH}")
+        print(f"📁 Будет создан новый при первом сохранении")
         return
+
     try:
         with open(DATA_PATH, 'r', encoding='utf-8') as f:
             data = json.load(f)
+
         loaded = data.get("user_data", {})
         loaded_names = data.get("user_names", {})
 
@@ -87,8 +117,36 @@ def load_data():
         user_data = new_user_data
         user_names.update(loaded_names)
         print(f"✅ Загружено {len(user_data)} игроков из {DATA_PATH}")
+
     except Exception as e:
         print(f"❌ Ошибка загрузки: {e}")
+        import traceback
+        traceback.print_exc()
+
+def _schedule_autosave():
+    """Автосохранение каждые 30 секунд"""
+    global _autosave_timer
+    save_data()
+    _autosave_timer = threading.Timer(30.0, _schedule_autosave)
+    _autosave_timer.daemon = True
+    _autosave_timer.start()
+
+def start_autosave():
+    """Запускает автосохранение"""
+    global _autosave_timer
+    if _autosave_timer is None:
+        print("🔄 Автосохранение запущено (каждые 30 сек)")
+        _schedule_autosave()
+
+def stop_autosave():
+    """Останавливает автосохранение"""
+    global _autosave_timer
+    if _autosave_timer:
+        _autosave_timer.cancel()
+        _autosave_timer = None
+
+# Регистрируем сохранение при выходе
+atexit.register(save_data)
 
 def update_user_name(user_id, name):
     user_names[user_id] = name

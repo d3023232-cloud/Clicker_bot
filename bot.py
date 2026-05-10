@@ -24,6 +24,9 @@ def main():
     # 📥 Загружаем данные игроков
     data_manager.load_data()
 
+    # 🔄 Запускаем автосохранение
+    data_manager.start_autosave()
+
     # 📥 Загружаем промокоды
     try:
         import promocodes
@@ -51,8 +54,11 @@ def main():
 
     try:
         application.run_polling(drop_pending_updates=True)
+    except KeyboardInterrupt:
+        logger.info("🛑 Получен сигнал остановки")
     finally:
         # 💾 Сохраняем данные при остановке
+        data_manager.stop_autosave()
         data_manager.save_data()
         logger.info("💾 Данные сохранены перед остановкой")
 
