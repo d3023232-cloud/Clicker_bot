@@ -1,13 +1,13 @@
 {
   "income": {
-    "click_base": 1.0,
-    "daily_base": 20,
-    "auto_cap_pct": 0.4,
-    "inactive_decay_mult": 0.3
+    "click_base": 3.0,
+    "daily_base": 50,
+    "auto_cap_pct": 0.6,
+    "inactive_decay_mult": 0.5
   },
   "pricing": {
-    "cost_multiplier": 2.8,
-    "diminishing_effect": true
+    "cost_multiplier": 2.1,
+    "diminishing_effect": false
   },
   "tax_rates": {
     "🥉 Бронза": 0.0,
