@@ -8,7 +8,16 @@ import config
 # ── BotHost Shared Storage ──────────────────────────────────────────
 SHARED_DIR = os.getenv("SHARED_DIR", "/app/shared")
 DATA_PATH = os.path.join(SHARED_DIR, "clicker_data.json")
-os.makedirs(SHARED_DIR, exist_ok=True)
+
+# Пытаемся создать директорию, если не получается — используем текущую
+try:
+    os.makedirs(SHARED_DIR, exist_ok=True)
+    print(f"📁 Директория данных: {SHARED_DIR}")
+except Exception as e:
+    print(f"⚠️ Не удалось создать {SHARED_DIR}: {e}")
+    SHARED_DIR = os.getcwd()
+    DATA_PATH = os.path.join(SHARED_DIR, "clicker_data.json")
+    print(f"📁 Fallback директория: {SHARED_DIR}")
 
 user_data = defaultdict(lambda: {
     "clicks": 0, "coins": 0, "click_power": 1.0, "auto_clicker": 0.0,

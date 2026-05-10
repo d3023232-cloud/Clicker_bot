@@ -1,4 +1,4 @@
-"""Game logic with VIP effects — без циклических импортов"""
+"""Game logic with VIP effects — без зависимости от поля 'clicks' в ACHIEVEMENTS"""
 import time
 import random
 from utils import get_league, get_econ, is_premium_active
@@ -32,12 +32,26 @@ def process_click(user_id):
     ud["clicks"] += 1
     ud["last_click"] = now
 
-    # Достижения
+    # Достижения — проверяем по количеству кликов (если есть поле 'clicks')
     new_achievements = []
     for key, ach in config.ACHIEVEMENTS.items():
-        if key not in ud["achievements"] and ud["clicks"] >= ach["clicks"]:
-            ud["achievements"].add(key)
-            new_achievements.append(key)
+        if key not in ud["achievements"]:
+            # Проверяем условия достижения
+            if key == "first_click" and ud["clicks"] >= 1:
+                ud["achievements"].add(key)
+                new_achievements.append(key)
+            elif key == "click_100" and ud["clicks"] >= 100:
+                ud["achievements"].add(key)
+                new_achievements.append(key)
+            elif key == "rich_100" and ud["coins"] >= 100:
+                ud["achievements"].add(key)
+                new_achievements.append(key)
+            elif key == "buy_upgrade" and ud.get("upgrade_double_click", 0) > 0:
+                ud["achievements"].add(key)
+                new_achievements.append(key)
+            elif key == "auto_owner" and ud.get("upgrade_auto_clicker", 0) > 0:
+                ud["achievements"].add(key)
+                new_achievements.append(key)
 
     data_manager.save_data()
 
