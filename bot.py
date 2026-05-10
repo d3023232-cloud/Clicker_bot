@@ -3,7 +3,7 @@ import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 
 import config
-import data_manager  # ← Добавляем импорт
+import data_manager
 from handlers import (
     start_handler,
     button_handler,
@@ -21,8 +21,16 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Запуск бота"""
-    # 📥 Загружаем данные игроков ПЕРЕД созданием приложения
+    # 📥 Загружаем данные игроков
     data_manager.load_data()
+
+    # 📥 Загружаем промокоды
+    try:
+        import promocodes
+        promocodes.load_promocodes()
+        logger.info("🎟 Промокоды загружены")
+    except Exception as e:
+        logger.warning(f"⚠️ Промокоды не загружены: {e}")
 
     # Создаём приложение
     application = ApplicationBuilder().token(config.BOT_TOKEN).build()
@@ -32,10 +40,10 @@ def main():
     application.add_handler(CommandHandler("mm", mm_handler))
     application.add_handler(CommandHandler("admins", admins_panel_handler))
 
-    # 🔘 Обработчик кнопок (все callback_data)
+    # 🔘 Обработчик кнопок
     application.add_handler(CallbackQueryHandler(button_handler))
 
-    # 💬 Обработчик текстовых сообщений (ставки, админ-ввод, команды)
+    # 💬 Обработчик текстовых сообщений
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_message_handler))
 
     # 🚀 Запуск
