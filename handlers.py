@@ -170,6 +170,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # === ГЛАВНОЕ МЕНЮ ===
     if query.data in ("main_menu", "back_to_main", "back"):
+        context.user_data.pop("promo_state", None)  # Сбрасываем состояние промокода
+        context.user_data.pop("admin_state", None)   # Сбрасываем состояние админки
         await query.edit_message_text("🎮 Главное меню:", reply_markup=get_main_menu())
         return
 
@@ -195,6 +197,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await show_profile(query, user_id)
         return
     if query.data == "back_to_profile":
+        context.user_data.pop("promo_state", None)  # Сбрасываем состояние промокода
         await show_profile(query, user_id)
         return
 
