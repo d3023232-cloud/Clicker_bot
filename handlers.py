@@ -1,4 +1,4 @@
-"""Основные обработчики бота — полная версия по ТЗ"""
+"""Основные обработчики бота — оригинал + новые функции ТЗ"""
 import time
 import random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice
@@ -11,18 +11,18 @@ from game_logic import process_click, get_profile_text, get_top_text, process_da
 from shop import buy_upgrade, buy_title, get_shop_upgrades_keyboard, get_shop_titles_keyboard, get_donat_shop_keyboard
 from minigames import validate_bet, start_crash_game, process_crash_game, start_roulette_game, process_roulette_game, start_duel_game, process_duel_game
 from admin import (
-    is_admin, get_admin_panel_text, get_admin_main_keyboard,
+    is_admin, get_admin_panel_text, get_admin_main_keyboard, get_admin_promo_keyboard,
     action_add_coins, action_remove_coins, action_add_donate, action_remove_donate,
     action_add_premium, action_remove_premium, action_ban, action_unban, action_reset_user,
     get_stats, get_user_info, get_econ_stats, get_user_display_name
 )
 
 # ============================================================================
-# 🎨 КЛАВИАТУРЫ
+# 🎨 КЛАВИАТУРЫ (новые + совместимость со старыми)
 # ============================================================================
 
 def get_main_menu():
-    """Главное меню по ТЗ: Профиль, Топ, Магазин, Донат, Мини-игры, Бонус"""
+    """Главное меню по ТЗ"""
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("👤 Профиль", callback_data="profile"), InlineKeyboardButton("🏆 Топ", callback_data="top")],
         [InlineKeyboardButton("🛒 Магазин", callback_data="shop"), InlineKeyboardButton("💎 Донат", callback_data="donat")],
@@ -31,7 +31,6 @@ def get_main_menu():
     ])
 
 def get_profile_submenu():
-    """Подменю Профиля: Рефералка, Достижения, Промокод"""
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🎁 Рефералка", callback_data="referral"), InlineKeyboardButton("🏅 Достижения", callback_data="achievements")],
         [InlineKeyboardButton("🎟 Ввести промокод", callback_data="promocode")],
@@ -39,7 +38,6 @@ def get_profile_submenu():
     ])
 
 def get_shop_submenu():
-    """Подменю Магазина: Улучшения, Звания"""
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("⚡ Улучшения", callback_data="shop_upgrades")],
         [InlineKeyboardButton("🎖 Звания", callback_data="shop_titles")],
@@ -47,7 +45,6 @@ def get_shop_submenu():
     ])
 
 def get_donat_submenu():
-    """Подменю Доната: Премиум, Монеты, Клики"""
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("💎 Премиум-статус", callback_data="donat_premium")],
         [InlineKeyboardButton("🪙 Монеты", callback_data="donat_coins")],
@@ -56,7 +53,6 @@ def get_donat_submenu():
     ])
 
 def get_minigames_menu():
-    """Меню мини-игр"""
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("💥 Краш", callback_data="game_crash_start")],
         [InlineKeyboardButton("🎰 Рулетка", callback_data="game_roulette_start")],
@@ -65,14 +61,12 @@ def get_minigames_menu():
     ])
 
 def get_subscription_keyboard():
-    """Клавиатура для проверки подписки"""
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📢 Перейти в канал", url=f"https://t.me/{config.CHANNEL_USERNAME}")],
         [InlineKeyboardButton("✅ Я подписался — проверить", callback_data="check_subscription")]
     ])
 
 def get_back_button(parent):
-    """Универсальная кнопка Назад"""
     return InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Назад", callback_data=f"back_to_{parent}")]])
 
 # ============================================================================
@@ -136,7 +130,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, parse_mode="HTML", reply_markup=get_main_menu())
 
 # ============================================================================
-# 🔘 ОБРАБОТЧИК КНОПОК
+# 🔘 ОБРАБОТЧИК КНОПОК — ВСЕ callback'и (старые + новые)
 # ============================================================================
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -176,11 +170,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # === ГЛАВНОЕ МЕНЮ ===
-    if query.data == "main_menu" or query.data == "back_to_main":
+    if query.data in ("main_menu", "back_to_main", "back"):
         await query.edit_message_text("🎮 Главное меню:", reply_markup=get_main_menu())
         return
 
-    # === КЛИК ===
+    # === КЛИК (оригинал) ===
     if query.data == "click":
         res = process_click(user_id)
         ach = ""
@@ -196,31 +190,33 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=get_main_menu()
         )
 
-    # === ПРОФИЛЬ ===
+    # === ПРОФИЛЬ (новое) ===
     elif query.data == "profile":
         await show_profile(query, user_id)
     elif query.data == "back_to_profile":
         await show_profile(query, user_id)
 
-    # === ТОП ===
+    # === ТОП (новое) ===
     elif query.data == "top":
         await show_top(query, user_id)
     elif query.data == "back_to_top":
         await show_top(query, user_id)
 
-    # === МАГАЗИН ===
+    # === МАГАЗИН (новое + совместимость) ===
     elif query.data == "shop":
         await query.edit_message_text("🛒 Магазин:", reply_markup=get_shop_submenu())
     elif query.data == "back_to_shop":
         await query.edit_message_text("🛒 Магазин:", reply_markup=get_shop_submenu())
     elif query.data == "shop_upgrades":
-        await show_upgrades(query, user_id)
+        await query.edit_message_text("🔧 Улучшения:", reply_markup=InlineKeyboardMarkup(get_shop_upgrades_keyboard(user_id)))
     elif query.data == "shop_titles":
         await query.edit_message_text("🏅 Звания:", reply_markup=InlineKeyboardMarkup(get_shop_titles_keyboard(user_id)))
 
-    # === ДОНАТ ===
+    # === ДОНАТ (новое + совместимость) ===
     elif query.data == "donat":
         await query.edit_message_text("💎 Донат-магазин:", reply_markup=get_donat_submenu())
+    elif query.data == "donat_shop":
+        await query.edit_message_text("💎 Donat-магазин (⭐):", reply_markup=InlineKeyboardMarkup(get_donat_shop_keyboard()))
     elif query.data == "back_to_donat":
         await query.edit_message_text("💎 Донат-магазин:", reply_markup=get_donat_submenu())
     elif query.data == "donat_premium":
@@ -230,69 +226,124 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "donat_clicks":
         await show_donat_clicks(query, user_id)
 
-    # === МИНИ-ИГРЫ ===
+    # === МИНИ-ИГРЫ (новое + совместимость) ===
     elif query.data == "minigames":
         await show_minigames(query, user_id)
     elif query.data == "back_to_minigames":
         await show_minigames(query, user_id)
-    elif query.data == "game_crash_start":
-        await start_crash(query, context, user_id)
-    elif query.data == "game_roulette_start":
-        await start_roulette(query, context, user_id)
-    elif query.data == "game_duel_start":
-        await start_duel(query, context, user_id)
 
-    # === БОНУС ===
+    # === БОНУС (новое — рандом 10-10000) ===
     elif query.data == "daily":
         await process_daily(query, user_id)
 
-    # === РЕФЕРАЛКА ===
+    # === РЕФЕРАЛКА (оригинал + новое) ===
     elif query.data == "referral":
         await show_referral(query, user_id)
     elif query.data == "back_to_referral":
         await show_referral(query, user_id)
 
-    # === ДОСТИЖЕНИЯ ===
+    # === ДОСТИЖЕНИЯ (оригинал + новое) ===
     elif query.data == "achievements":
         await show_achievements(query, user_id)
+
+    # === ПРОФИЛЬ (старый callback) ===
+    elif query.data == "my_profile":
+        await show_profile(query, user_id)
 
     # === ПРОМОКОД ===
     elif query.data == "promocode":
         context.user_data["promo_state"] = "input"
         await query.edit_message_text(
-            "🎟 Введите промокод:\n\n"
-            "(или нажмите Назад)",
+            "🎟 Введите промокод:\n\n(или нажмите Назад)",
             reply_markup=get_back_button("profile")
         )
 
-    # === ПОКУПКИ ===
+    # === ПОКУПКИ УЛУЧШЕНИЙ (оригинал) ===
     elif query.data.startswith("buy_upg_"):
-        await process_upgrade_buy(query, user_id, query.data[8:])
+        res = buy_upgrade(user_id, query.data[8:])
+        if res.get("new_achievement"):
+            await query.answer("🎉 Робо-помощник!", show_alert=True)
+        await query.edit_message_text(res["message"], reply_markup=get_shop_submenu())
+
+    # === ПОКУПКИ ЗВАНИЙ (оригинал) ===
     elif query.data.startswith("buy_title_"):
         res = buy_title(user_id, query.data[11:])
         await query.edit_message_text(res["message"], reply_markup=get_shop_submenu())
+
+    # === ПОКУПКИ DONAT STARS (оригинал) ===
     elif query.data.startswith("buy_stars_"):
         await process_donat_buy(query, context, user_id, query.data[10:])
 
-    # === ИГРОВЫЕ КНОПКИ ===
+    # === ПОКУПКИ ПРЕМИУМА ===
+    elif query.data == "buy_premium_stars":
+        await buy_premium_stars(query, context, user_id)
+    elif query.data == "buy_premium_donate":
+        await buy_premium_donate(query, user_id)
+
+    # === ПОКУПКИ МОНЕТ ===
+    elif query.data.startswith("buy_coins_"):
+        await process_coins_buy(query, user_id, query.data)
+
+    # === ПОКУПКИ КЛИКОВ ===
+    elif query.data.startswith("buy_click_"):
+        await process_click_buy(query, user_id, query.data)
+
+    # === ПОДТВЕРЖДЕНИЕ УЛУЧШЕНИЯ ===
+    elif query.data.startswith("confirm_upg_"):
+        res = buy_upgrade(user_id, query.data[12:])
+        await query.edit_message_text(res["message"], reply_markup=get_shop_submenu())
+
+    # === ИГРЫ (оригинал) ===
+    elif query.data == "game_crash_start":
+        res = start_crash_game(user_id)
+        if not res["success"]:
+            return await query.answer(res["message"], show_alert=True)
+        context.user_data.update({"game_state": "crash", "game_user_id": user_id})
+        await query.edit_message_text("💥 Краш\n📉 Ставка 20–1 000 000\n\n_Введите число в чат_", parse_mode="HTML")
     elif query.data.startswith("crash_multiplier_"):
-        await process_crash_multiplier(query, context, user_id)
+        mult = float(query.data.split("_")[2])
+        bet = context.user_data.get("crash_bet")
+        if not bet or context.user_data.get("game_user_id") != user_id:
+            return await query.edit_message_text("❌ Сессия истекла.", reply_markup=get_main_menu())
+        res = process_crash_game(user_id, bet, mult)
+        await query.edit_message_text(res["message"], parse_mode="HTML", reply_markup=get_main_menu())
+        for key in list(context.user_data.keys()):
+            if key.startswith(("game_", "crash_", "roulette_", "duel_")):
+                context.user_data.pop(key, None)
+    elif query.data == "game_roulette_start":
+        res = start_roulette_game(user_id)
+        if not res["success"]:
+            return await query.answer(res["message"], show_alert=True)
+        context.user_data.update({"game_state": "roulette", "game_user_id": user_id})
+        await query.edit_message_text("🎰 Рулетка\n🔴/⚫ ×1.9 | 🟢 ×9.0\n\n_Введите ставку_", parse_mode="HTML")
     elif query.data.startswith("roulette_color_"):
-        await process_roulette_color(query, context, user_id)
+        color = query.data.split("_")[2]
+        bet = context.user_data.get("roulette_bet")
+        if not bet or context.user_data.get("game_user_id") != user_id:
+            return await query.edit_message_text("❌ Сессия истекла.", reply_markup=get_main_menu())
+        res = process_roulette_game(user_id, bet, color)
+        await query.edit_message_text(f"🎰 {res['message']}\n🪙 {format_number(int(res['balance']))}", parse_mode="HTML", reply_markup=get_main_menu())
+        for key in list(context.user_data.keys()):
+            if key.startswith(("game_", "crash_", "roulette_", "duel_")):
+                context.user_data.pop(key, None)
+    elif query.data == "game_duel_start":
+        res = start_duel_game(user_id)
+        if not res["success"]:
+            return await query.answer(res["message"], show_alert=True)
+        context.user_data.update({"game_state": "duel", "game_user_id": user_id})
+        await query.edit_message_text("⚔️ Дуэль (48% победа)\n\n_Введите ставку_", parse_mode="HTML")
 
     # === НАЗАД (универсальные) ===
-    elif query.data in ("back", "noop"):
+    elif query.data == "noop":
         await query.edit_message_text("🎮 Главное меню:", reply_markup=get_main_menu())
 
 # ============================================================================
-# 👤 ПРОФИЛЬ (по ТЗ)
+# 👤 ПРОФИЛЬ
 # ============================================================================
 
 async def show_profile(query, user_id):
-    """Экран Профиля по ТЗ: статистика + кнопки Рефералка/Достижения/Промокод"""
     ud = data_manager.user_data[user_id]
     vip = " 👑" if is_premium_active(ud) else ""
-
     text = (
         f"<b>👤 Профиль{vip}</b>\n\n"
         f"🆔 ID: <code>{user_id}</code>\n"
@@ -309,11 +360,9 @@ async def show_profile(query, user_id):
     await query.edit_message_text(text, parse_mode="HTML", reply_markup=get_profile_submenu())
 
 async def show_referral(query, user_id):
-    """Рефералка"""
     link = f"https://t.me/{config.YOUR_BOT_USERNAME}?start=ref{user_id}"
     count = len([u for u in data_manager.user_data.values() if u.get("referrer_id") == user_id])
     earned = data_manager.user_data[user_id]['donate_coins']
-
     text = (
         "🤝 <b>Реферальная программа</b>\n\n"
         f"🔗 Ваша ссылка:\n<code>{link}</code>\n\n"
@@ -324,7 +373,6 @@ async def show_referral(query, user_id):
     await query.edit_message_text(text, parse_mode="HTML", reply_markup=get_back_button("profile"))
 
 async def show_achievements(query, user_id):
-    """Достижения"""
     ud = data_manager.user_data[user_id]
     text = "🏅 <b>Достижения</b>\n\n"
     for k, v in config.ACHIEVEMENTS.items():
@@ -334,91 +382,50 @@ async def show_achievements(query, user_id):
     await query.edit_message_text(text, reply_markup=get_back_button("profile"))
 
 # ============================================================================
-# 🏆 ТОП-10 (по ТЗ)
+# 🏆 ТОП-10
 # ============================================================================
 
 async def show_top(query, user_id):
-    """ТОП-10 + личная позиция"""
     sorted_users = sorted(data_manager.user_data.items(), key=lambda x: x[1]["coins"], reverse=True)
-
     text = "🏆 <b>ТОП-10 игроков</b>\n\n"
-
     for i, (uid, ud) in enumerate(sorted_users[:10], 1):
         vip = " 👑" if is_premium_active(ud) else ""
         name = ud.get('name', f'ID{uid}')
         marker = " →" if uid == user_id else ""
         text += f"{i}. {name}{vip} — {format_number(int(ud['coins']))}{marker}\n"
-
-    # Личная позиция
     user_position = None
     for i, (uid, _) in enumerate(sorted_users, 1):
         if uid == user_id:
             user_position = i
             break
-
     if user_position and user_position > 10:
         text += f"\n📍 <b>Ваше место: {user_position}</b>"
     elif user_position and user_position <= 10:
         text += "\n✨ <b>Вы в ТОП-10!</b>"
     else:
         text += "\n📍 <b>Вы ещё не в рейтинге</b>"
-
     await query.edit_message_text(text, parse_mode="HTML", reply_markup=get_back_button("main"))
 
 # ============================================================================
-# 🛒 МАГАЗИН (по ТЗ)
+# 🎮 МИНИ-ИГРЫ
 # ============================================================================
 
-async def show_upgrades(query, user_id):
-    """Улучшения — список с ценами"""
+async def show_minigames(query, user_id):
     ud = data_manager.user_data[user_id]
     text = (
-        "⚡ <b>Улучшения</b>\n\n"
-        f"🪙 Баланс: {format_number(int(ud['coins']))}\n"
-        f"⚡ Текущая сила: {ud['click_power']}\n\n"
-        "Выберите улучшение:"
+        "🎮 <b>Мини-игры</b>\n\n"
+        f"🪙 Ваш баланс: {format_number(int(ud['coins']))}\n"
+        f"📉 Мин. ставка: {format_number(config.MIN_BET)}\n"
+        f"📈 Макс. ставка: {format_number(config.MAX_BET)}\n\n"
+        "Выберите игру:"
     )
-    await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(get_shop_upgrades_keyboard(user_id)))
-
-async def process_upgrade_buy(query, user_id, upgrade_id):
-    """Покупка улучшения с подтверждением"""
-    from shop import calc_upgrade_cost, UPGRADES
-
-    ud = data_manager.user_data[user_id]
-    current_level = ud.get(f"upgrade_{upgrade_id}", 0)
-    cost = calc_upgrade_cost(upgrade_id, current_level)
-
-    if ud["coins"] < cost:
-        await query.answer("❌ Недостаточно монет!", show_alert=True)
-        return
-
-    # Экран подтверждения
-    new_power = UPGRADES[upgrade_id]["effect"](ud["click_power"], current_level + 1)
-    increase = new_power - ud["click_power"]
-
-    text = (
-        f"⚡ <b>Подтверждение покупки</b>\n\n"
-        f"Улучшение: {UPGRADES[upgrade_id]['name']}\n"
-        f"Уровень: {current_level + 1}\n\n"
-        f"⚡ Сила: {ud['click_power']} → <b>{new_power}</b> (+{increase})\n"
-        f"🪙 Стоимость: {format_number(cost)}\n"
-        f"💰 Баланс: {format_number(int(ud['coins']))}\n\n"
-        f"После покупки: {format_number(int(ud['coins'] - cost))}"
-    )
-
-    kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"✅ Купить за {format_number(cost)}", callback_data=f"confirm_upg_{upgrade_id}")],
-        [InlineKeyboardButton("⬅️ Назад", callback_data="back_to_shop")]
-    ])
-
-    await query.edit_message_text(text, reply_markup=kb)
+    await query.edit_message_text(text, reply_markup=get_minigames_menu())
 
 # ============================================================================
-# 💎 ДОНАТ (по ТЗ)
+# 💎 ДОНАТ
 # ============================================================================
 
 async def show_premium_info(query, user_id):
-    """Информация о Премиуме"""
     ud = data_manager.user_data[user_id]
     text = (
         "💎 <b>Премиум-статус</b> 👑\n\n"
@@ -434,24 +441,20 @@ async def show_premium_info(query, user_id):
         "  • Или 100 ₽ (скоро)\n\n"
         f"💎 Ваши донат-коины: {ud['donate_coins']}"
     )
-
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("⭐ Купить за 100 Stars", callback_data="buy_premium_stars")],
         [InlineKeyboardButton("🪙 Купить за 150 донат", callback_data="buy_premium_donate")],
         [InlineKeyboardButton("⬅️ Назад", callback_data="back_to_donat")]
     ])
-
     await query.edit_message_text(text, reply_markup=kb)
 
 async def show_donat_coins(query, user_id):
-    """Покупка монет"""
     ud = data_manager.user_data[user_id]
     text = (
         "🪙 <b>Покупка монет</b>\n\n"
         f"💰 Текущий баланс: {format_number(int(ud['coins']))}\n\n"
         "Выберите количество:"
     )
-
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("100 000 🪙 — 25 ⭐", callback_data="buy_coins_100k_stars")],
         [InlineKeyboardButton("100 000 🪙 — 75 донат", callback_data="buy_coins_100k_donate")],
@@ -461,11 +464,9 @@ async def show_donat_coins(query, user_id):
         [InlineKeyboardButton("10 000 000 🪙 — 750 донат", callback_data="buy_coins_10m_donate")],
         [InlineKeyboardButton("⬅️ Назад", callback_data="back_to_donat")]
     ])
-
     await query.edit_message_text(text, reply_markup=kb)
 
 async def show_donat_clicks(query, user_id):
-    """Покупка кликов"""
     ud = data_manager.user_data[user_id]
     text = (
         "👆 <b>Покупка силы клика</b>\n\n"
@@ -473,7 +474,6 @@ async def show_donat_clicks(query, user_id):
         f"💎 Донат-коины: {ud['donate_coins']}\n\n"
         "Выберите усиление:"
     )
-
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("+5 клик — 40 ⭐", callback_data="buy_click_5_stars")],
         [InlineKeyboardButton("+5 клик — 120 донат", callback_data="buy_click_5_donate")],
@@ -481,94 +481,116 @@ async def show_donat_clicks(query, user_id):
         [InlineKeyboardButton("+10 клик — 270 донат", callback_data="buy_click_10_donate")],
         [InlineKeyboardButton("⬅️ Назад", callback_data="back_to_donat")]
     ])
-
     await query.edit_message_text(text, reply_markup=kb)
 
 # ============================================================================
-# 🎮 МИНИ-ИГРЫ (по ТЗ — с балансом)
+# 🛒 ПОКУПКИ
 # ============================================================================
 
-async def show_minigames(query, user_id):
-    """Мини-игры с отображением баланса"""
-    ud = data_manager.user_data[user_id]
-    text = (
-        "🎮 <b>Мини-игры</b>\n\n"
-        f"🪙 Ваш баланс: {format_number(int(ud['coins']))}\n"
-        f"📉 Мин. ставка: {format_number(config.MIN_BET)}\n"
-        f"📈 Макс. ставка: {format_number(config.MAX_BET)}\n\n"
-        "Выберите игру:"
-    )
-    await query.edit_message_text(text, reply_markup=get_minigames_menu())
+async def process_donat_buy(query, context, user_id, item_id):
+    """Покупка через Telegram Stars (оригинал)"""
+    item = config.DONAT_SHOP.get(item_id)
+    if not item:
+        return await query.edit_message_text("❌ Товар не найден.", reply_markup=get_main_menu())
+    try:
+        await context.bot.send_invoice(chat_id=user_id, title=item["name"], description=item["desc"],
+            payload=f"donat_{item_id}", provider_token="", currency="XTR",
+            prices=[LabeledPrice(label="Цена", amount=item["stars"])])
+    except Exception as e:
+        await query.edit_message_text(f"❌ Ошибка оплаты: {e}", reply_markup=get_main_menu())
 
-async def start_crash(query, context, user_id):
-    """Старт Краша"""
-    res = start_crash_game(user_id)
-    if not res["success"]:
-        return await query.answer(res["message"], show_alert=True)
-    context.user_data.update({"game_state": "crash", "game_user_id": user_id})
-    ud = data_manager.user_data[user_id]
-    await query.edit_message_text(
-        f"💥 <b>Краш</b>\n\n"
-        f"🪙 Баланс: {format_number(int(ud['coins']))}\n"
-        f"📉 Ставка: {format_number(config.MIN_BET)} – {format_number(config.MAX_BET)}\n\n"
-        "_Введите число в чат_",
-        parse_mode="HTML"
-    )
+async def buy_premium_stars(query, context, user_id):
+    """Покупка премиума за Stars"""
+    try:
+        await context.bot.send_invoice(chat_id=user_id, title="Премиум-статус 👑", 
+            description="x2 клик, x2 авто, x3 бонус, VIP-значок на 30 дней",
+            payload="premium_30d", provider_token="", currency="XTR",
+            prices=[LabeledPrice(label="Премиум 30 дней", amount=100)])
+    except Exception as e:
+        await query.edit_message_text(f"❌ Ошибка: {e}", reply_markup=get_donat_submenu())
 
-async def start_roulette(query, context, user_id):
-    """Старт Рулетки"""
-    res = start_roulette_game(user_id)
-    if not res["success"]:
-        return await query.answer(res["message"], show_alert=True)
-    context.user_data.update({"game_state": "roulette", "game_user_id": user_id})
+async def buy_premium_donate(query, user_id):
+    """Покупка премиума за донат-коины"""
     ud = data_manager.user_data[user_id]
-    await query.edit_message_text(
-        f"🎰 <b>Рулетка</b>\n\n"
-        f"🪙 Баланс: {format_number(int(ud['coins']))}\n"
-        f"🔴/⚫ ×1.9 | 🟢 ×9.0\n\n"
-        "_Введите ставку в чат_",
-        parse_mode="HTML"
-    )
+    if ud["donate_coins"] < 150:
+        await query.answer("❌ Недостаточно донат-коинов!", show_alert=True)
+        return
+    ud["donate_coins"] -= 150
+    ud["premium"] = True
+    current = ud.get("premium_until", 0)
+    if current < time.time():
+        current = time.time()
+    ud["premium_until"] = current + (30 * 86400)
+    data_manager.save_data()
+    await query.edit_message_text("👑 <b>Премиум активирован на 30 дней!</b>", reply_markup=get_donat_submenu())
 
-async def start_duel(query, context, user_id):
-    """Старт Дуэли"""
-    res = start_duel_game(user_id)
-    if not res["success"]:
-        return await query.answer(res["message"], show_alert=True)
-    context.user_data.update({"game_state": "duel", "game_user_id": user_id})
+async def process_coins_buy(query, user_id, callback_data):
+    """Покупка монет"""
     ud = data_manager.user_data[user_id]
-    await query.edit_message_text(
-        f"⚔️ <b>Дуэль</b> (48% победа)\n\n"
-        f"🪙 Баланс: {format_number(int(ud['coins']))}\n"
-        f"📉 Мин. ставка: {format_number(config.MIN_DUEL_BET)}\n\n"
-        "_Введите ставку в чат_",
-        parse_mode="HTML"
-    )
+    prices = {
+        "buy_coins_100k_stars": (25, "stars", 100000),
+        "buy_coins_100k_donate": (75, "donate", 100000),
+        "buy_coins_1m_stars": (65, "stars", 1000000),
+        "buy_coins_1m_donate": (195, "donate", 1000000),
+        "buy_coins_10m_stars": (250, "stars", 10000000),
+        "buy_coins_10m_donate": (750, "donate", 10000000),
+    }
+    if callback_data not in prices:
+        return
+    cost, currency, amount = prices[callback_data]
+    if currency == "donate":
+        if ud["donate_coins"] < cost:
+            await query.answer("❌ Недостаточно донат-коинов!", show_alert=True)
+            return
+        ud["donate_coins"] -= cost
+    ud["coins"] += amount
+    data_manager.save_data()
+    await query.edit_message_text(f"✅ +{format_number(amount)} монет!", reply_markup=get_donat_submenu())
+
+async def process_click_buy(query, user_id, callback_data):
+    """Покупка силы клика"""
+    ud = data_manager.user_data[user_id]
+    prices = {
+        "buy_click_5_stars": (40, "stars", 5),
+        "buy_click_5_donate": (120, "donate", 5),
+        "buy_click_10_stars": (90, "stars", 10),
+        "buy_click_10_donate": (270, "donate", 10),
+    }
+    if callback_data not in prices:
+        return
+    cost, currency, amount = prices[callback_data]
+    if currency == "donate":
+        if ud["donate_coins"] < cost:
+            await query.answer("❌ Недостаточно донат-коинов!", show_alert=True)
+            return
+        ud["donate_coins"] -= cost
+    ud["click_power"] += amount
+    data_manager.save_data()
+    await query.edit_message_text(f"✅ Сила клика +{amount}! Теперь: {ud['click_power']}", reply_markup=get_donat_submenu())
 
 # ============================================================================
-# 🎁 БОНУС (рандом 10-10000 по ТЗ)
+# 🎁 БОНУС (рандом 10-10000)
 # ============================================================================
 
 async def process_daily(query, user_id):
-    """Ежедневный бонус — рандом 10-10000"""
     ud = data_manager.user_data[user_id]
     now = time.time()
     last = ud.get("last_daily", 0)
-
     if now - last < 86400:
         hours_left = int((86400 - (now - last)) / 3600)
         await query.edit_message_text(f"🎁 Бонус доступен через {hours_left} ч.", reply_markup=get_main_menu())
         return
-
-    # Рандомный бонус 10-10000
     bonus = random.randint(10, 10000)
+    # VIP x3
+    if is_premium_active(ud):
+        bonus *= 3
     ud["coins"] += bonus
     ud["last_daily"] = now
     data_manager.save_data()
-
+    vip_text = " (x3 VIP)" if is_premium_active(ud) else ""
     await query.edit_message_text(
         f"🍀 <b>Вы испытали сегодняшнюю удачу!</b>\n\n"
-        f"🎁 Ваш бонус: {format_number(bonus)} монет!\n"
+        f"🎁 Ваш бонус: {format_number(bonus)} монет{vip_text}!\n"
         f"🪙 Новый баланс: {format_number(int(ud['coins']))}\n\n"
         "Возвращайтесь завтра! 🎰",
         reply_markup=get_main_menu()
@@ -579,16 +601,12 @@ async def process_daily(query, user_id):
 # ============================================================================
 
 async def process_promocode(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id, code):
-    """Обработка введённого промокода"""
     from promocodes import check_promocode, use_promocode
-
     result = check_promocode(code, user_id)
     if not result["success"]:
         await update.message.reply_text(f"❌ {result['message']}")
         return
-
     rewards = use_promocode(code, user_id)
-
     text = "🎉 <b>Промокод активирован!</b>\n\n"
     if rewards.get("coins"):
         text += f"🪙 +{format_number(rewards['coins'])} монет\n"
@@ -596,14 +614,12 @@ async def process_promocode(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         text += f"💎 +{rewards['donate_coins']} донат-коинов\n"
     if rewards.get("premium_days"):
         text += f"👑 +{rewards['premium_days']} дней премиума\n"
-
     text += f"\nОсталось активаций: {rewards['uses_left']}"
-
     await update.message.reply_text(text, parse_mode="HTML", reply_markup=get_profile_submenu())
     context.user_data.pop("promo_state", None)
 
 # ============================================================================
-# 🛠 АДМИН-ПАНЕЛЬ (расширенная — с промокодами)
+# 🛠 АДМИН-ПАНЕЛЬ (полная — старая + новая)
 # ============================================================================
 
 async def _admin_callback(query, context, user_id):
@@ -622,12 +638,14 @@ async def _admin_callback(query, context, user_id):
         context.user_data.update({"admin_state": "search_input", "admin_action": None})
         return await query.edit_message_text("🔍 Введите @, имя или ID:", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Отмена", callback_data="admin_main")]]))
 
-    # Промокоды в админке
+    # === ПРОМОКОДЫ ===
+    if data == "admin_promo_menu":
+        return await query.edit_message_text("🎟 Управление промокодами:", reply_markup=get_admin_promo_keyboard())
+
     if data == "admin_promo_create":
         context.user_data["admin_state"] = "promo_create_name"
         return await query.edit_message_text(
-            "🎟 <b>Создание промокода</b>\n\n"
-            "Введите название промокода (по которому будут активировать):",
+            "🎟 <b>Создание промокода</b>\n\nВведите название:",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Отмена", callback_data="admin_main")]])
         )
 
@@ -641,9 +659,9 @@ async def _admin_callback(query, context, user_id):
     if data == "admin_promo_list":
         from promocodes import list_promocodes
         text = list_promocodes()
-        return await query.edit_message_text(text, reply_markup=get_admin_main_keyboard())
+        return await query.edit_message_text(text, reply_markup=get_admin_promo_keyboard())
 
-    # Стандартные действия админа
+    # === СТАНДАРТНЫЕ ДЕЙСТВИЯ ===
     actions = ["add_coins", "remove_coins", "add_donate", "remove_donate", "add_premium", "remove_premium", "ban", "unban", "reset"]
     if any(data.startswith(f"admin_action_{a}") for a in actions):
         act = data.replace("admin_action_", "")
@@ -671,7 +689,6 @@ async def _admin_callback(query, context, user_id):
         rest = data.replace("admin_confirm_", "")
         action, uid_str = rest.rsplit("_", 1)
         uid = int(uid_str)
-
         funcs = {
             "add_coins": action_add_coins, "remove_coins": action_remove_coins,
             "add_donate": action_add_donate, "remove_donate": action_remove_donate,
@@ -682,7 +699,6 @@ async def _admin_callback(query, context, user_id):
             res = funcs[action](uid, val)
         else:
             res = {"ban": action_ban, "unban": action_unban, "remove_premium": action_remove_premium, "reset": action_reset_user}.get(action, lambda u: {"success": False, "message": "❌ Неизвестное действие"})(uid)
-
         for key in list(context.user_data.keys()):
             if key.startswith(("admin_", "game_", "crash_", "roulette_", "duel_", "promo_")):
                 context.user_data.pop(key, None)
@@ -744,8 +760,7 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             return await update.message.reply_text(
                 "🎟 Введите награды (через пробел):\n"
                 "1 [монеты] 2 [донат] 3 [дни према]\n"
-                "Пример: 1 5000 2 100 3 7\n"
-                "(0 если не нужно)",
+                "Пример: 1 5000 2 100 3 7\n(0 если не нужно)",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Отмена", callback_data="admin_main")]])
             )
 
@@ -758,7 +773,7 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                 context.user_data["promo_rewards"] = {"coins": coins, "donate_coins": donate, "premium_days": premium}
                 context.user_data["admin_state"] = "promo_create_limit"
                 return await update.message.reply_text(
-                    "🎟 Введите лимит активаций (сколько человек могут использовать):",
+                    "🎟 Введите лимит активаций:",
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Отмена", callback_data="admin_main")]])
                 )
             except:
