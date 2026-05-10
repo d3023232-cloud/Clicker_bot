@@ -3,6 +3,7 @@ import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 
 import config
+import data_manager  # ← Добавляем импорт
 from handlers import (
     start_handler,
     button_handler,
@@ -20,6 +21,9 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Запуск бота"""
+    # 📥 Загружаем данные игроков ПЕРЕД созданием приложения
+    data_manager.load_data()
+
     # Создаём приложение
     application = ApplicationBuilder().token(config.BOT_TOKEN).build()
 
@@ -36,7 +40,13 @@ def main():
 
     # 🚀 Запуск
     logger.info("✅ Bot successfully started!")
-    application.run_polling(drop_pending_updates=True)
+
+    try:
+        application.run_polling(drop_pending_updates=True)
+    finally:
+        # 💾 Сохраняем данные при остановке
+        data_manager.save_data()
+        logger.info("💾 Данные сохранены перед остановкой")
 
 if __name__ == '__main__':
     main()
