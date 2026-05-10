@@ -153,3 +153,15 @@ def buy_title(user_id, title_id):
     data_manager.save_data()
 
     return {"success": True, "message": f"🏅 Звание получено: {title['name']}!"}
+
+
+def update_league(user_id):
+    """Обновляет лигу игрока на основе монет"""
+    from utils import get_league
+    ud = data_manager.user_data[user_id]
+    new_league = get_league(ud["coins"])
+    if new_league != ud["league"]:
+        ud["league"] = new_league
+        data_manager.save_data()
+        return True
+    return False
