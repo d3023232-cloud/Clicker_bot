@@ -386,7 +386,7 @@ async def show_profile(query, user_id):
     text = (
         f"👤 Профиль{vip}\n\n"
         f"🆔 ID: <code>{user_id}</code>\n"
-        f"👤 Ник: {ud.get('name', 'Игрок')}\n"
+        f"👤 Ник: {data_manager.get_user_name_by_id(user_id)}\n"
         f"🪙 Баланс: {format_number(int(ud['coins']))}\n"
         f"⚡ Сила клика: {ud['click_power']}\n"
         f"🤖 Авто-доход: {ud['auto_clicker']}/сек\n"
@@ -429,7 +429,7 @@ async def show_top(query, user_id):
     text = "🏆 ТОП-10 игроков\n\n"
     for i, (uid, ud) in enumerate(sorted_users[:10], 1):
         vip = " 👑" if is_premium_active(ud) else ""
-        name = ud.get('name', f'ID{uid}')
+        name = data_manager.get_user_name_by_id(uid)
         marker = " →" if uid == user_id else ""
         text += f"{i}. {name}{vip} — {format_number(int(ud['coins']))}{marker}\n"
     user_position = None

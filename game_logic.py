@@ -66,7 +66,7 @@ def process_click(user_id):
 def get_profile_text(user_id):
     ud = data_manager.user_data[user_id]
     vip = " 👑" if is_premium_active(ud) else ""
-    name = ud.get("name", f"ID{user_id}")
+    name = data_manager.get_user_name_by_id(user_id)
 
     text = (
         f"👤 Профиль{vip}\n"
@@ -88,7 +88,7 @@ def get_top_text():
     text = "🏆 Топ игроков\n\n"
     for i, (uid, ud) in enumerate(sorted_users[:10], 1):
         vip = " 👑" if is_premium_active(ud) else ""
-        name = ud.get("name", f"ID{uid}")
+        name = data_manager.get_user_name_by_id(uid)
         text += f"{i}. {name}{vip} — {int(ud['coins']):,}\n"
     return text
 
