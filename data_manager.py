@@ -1,4 +1,4 @@
-"""Data management with auto-save"""
+"""Data management — надёжное сохранение с проверкой путей"""
 import json
 import os
 import time
@@ -7,21 +7,45 @@ import threading
 from collections import defaultdict
 import config
 
-# ── BotHost Shared Storage ──────────────────────────────────────────
-SHARED_DIR = os.getenv("SHARED_DIR", "/app/shared")
-DATA_PATH = os.path.join(SHARED_DIR, "clicker_data.json")
+# ── Пробуем несколько путей для сохранения ─────────────────────────
+_POSSIBLE_PATHS = [
+    os.getenv("SHARED_DIR", ""),           # BotHost переменная
+    "/app/shared",                          # BotHost shared
+    "/data",                                # Railway/Render
+    os.path.join(os.getcwd(), "data"),      # Локальная подпапка
+    os.getcwd(),                            # Текущая директория (fallback)
+]
 
-# Пытаемся создать директорию
-try:
-    os.makedirs(SHARED_DIR, exist_ok=True)
-    print(f"📁 Директория данных: {SHARED_DIR}")
-except Exception as e:
-    print(f"⚠️ Не удалось создать {SHARED_DIR}: {e}")
-    SHARED_DIR = os.getcwd()
-    DATA_PATH = os.path.join(SHARED_DIR, "clicker_data.json")
-    print(f"📁 Fallback директория: {SHARED_DIR}")
+DATA_PATH = None
 
-print(f"📂 Путь к данным: {DATA_PATH}")
+def _find_working_path():
+    """Находит первый рабочий путь для сохранения данных"""
+    global DATA_PATH
+
+    for path in _POSSIBLE_PATHS:
+        if not path:
+            continue
+        try:
+            os.makedirs(path, exist_ok=True)
+            test_file = os.path.join(path, ".write_test")
+            with open(test_file, "w") as f:
+                f.write("test")
+            with open(test_file, "r") as f:
+                assert f.read() == "test"
+            os.remove(test_file)
+            DATA_PATH = os.path.join(path, "clicker_data.json")
+            print(f"✅ Найден рабочий путь: {DATA_PATH}")
+            return True
+        except Exception as e:
+            print(f"❌ Путь {path} не работает: {e}")
+            continue
+
+    # Крайний fallback — текущая директория
+    DATA_PATH = os.path.join(os.getcwd(), "clicker_data.json")
+    print(f"⚠️ Используем fallback: {DATA_PATH}")
+    return True
+
+_find_working_path()
 
 user_data = defaultdict(lambda: {
     "clicks": 0, "coins": 0, "click_power": 1.0, "auto_clicker": 0.0,
@@ -35,7 +59,12 @@ user_names = {}
 _autosave_timer = None
 
 def save_data():
-    """Сохраняет данные и проверяет файл"""
+    """Сохраняет данные атомарно"""
+    global DATA_PATH
+    if DATA_PATH is None:
+        print("❌ DATA_PATH не определён!")
+        return False
+
     try:
         serializable = {}
         for uid, data in user_data.items():
@@ -50,24 +79,22 @@ def save_data():
                 "reminders_enabled": data["reminders_enabled"], "banned": data.get("banned", False)
             }
 
-        # Записываем во временный файл, затем переименовываем (атомарно)
         temp_path = DATA_PATH + ".tmp"
         with open(temp_path, 'w', encoding='utf-8') as f:
             json.dump({"user_data": serializable, "user_names": user_names}, f, ensure_ascii=False, indent=2)
 
-        # Переименовываем (атомарная операция)
         if os.path.exists(DATA_PATH):
             os.replace(temp_path, DATA_PATH)
         else:
             os.rename(temp_path, DATA_PATH)
 
-        # Проверяем, что файл реально записался
+        # Проверяем
         if os.path.exists(DATA_PATH):
             size = os.path.getsize(DATA_PATH)
-            print(f"💾 Данные сохранены: {DATA_PATH} ({len(user_data)} игроков, {size} bytes)")
+            print(f"💾 Сохранено: {DATA_PATH} ({len(user_data)} игроков, {size} bytes)")
             return True
         else:
-            print(f"❌ Файл не создан после записи!")
+            print(f"❌ Файл не создан: {DATA_PATH}")
             return False
 
     except Exception as e:
@@ -78,11 +105,14 @@ def save_data():
 
 def load_data():
     """Загружает данные"""
-    global user_data, user_names
+    global user_data, user_names, DATA_PATH
+
+    if DATA_PATH is None:
+        _find_working_path()
 
     if not os.path.exists(DATA_PATH):
-        print(f"📁 Файл данных не найден: {DATA_PATH}")
-        print(f"📁 Будет создан новый при первом сохранении")
+        print(f"📁 Файл не найден: {DATA_PATH}")
+        print(f"📁 Будет создан при первом сохранении")
         return
 
     try:
@@ -145,7 +175,6 @@ def stop_autosave():
         _autosave_timer.cancel()
         _autosave_timer = None
 
-# Регистрируем сохранение при выходе
 atexit.register(save_data)
 
 def update_user_name(user_id, name):
